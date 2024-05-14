@@ -60,23 +60,23 @@ class Dxl6d:
                 #print(i, "=>", present_position * 360 / 4096)
                 #print(i, len(data))
                 data[i - 1] = (present_position - 2048.) / 2048. * math.pi
-                if i == 2 or i == 4 or i == 5:
+                if i == 2 or i == 5:
                     data[i-1] = -data[i-1]
                 print(present_position, data[i-1] / math.pi * 180)
             q = np.array(data)
-            pinocchio.forwardKinematics(self.model, self.data, q)
-
-            # Print out the placement of each joint of the kinematic tree
-            for name, oMi in zip(self.model.names, self.data.oMi):
-                print(("{:<24} : {: .3f} {: .3f} {: .3f}"
-                    .format( name, *oMi.translation.T.flat )))
-
+            pinocchio.framesForwardKinematics(self.model, self.data, q)
+            frame_id = self.model.getFrameId("tip")
+            print(("{:<24} : {: .3f} {: .3f} {: .3f}"
+                    .format("tip", *self.data.oMf[frame_id].translation.T.flat )))
+            # for name, oMi in zip(self.model.names, self.data.oMi):
+            #     print(("{:<24} : {: .3f} {: .3f} {: .3f}"
+            #         .format( name, *oMi.translation.T.flat )))
             msg.data = data
-            quat = pinocchio.Quaternion(self.data.oMi[5].rotation)
+            quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
             self.pose_msg.header.frame_id = "map"
-            self.pose_msg.pose.position.x = self.data.oMi[5].translation[0]
-            self.pose_msg.pose.position.y = self.data.oMi[5].translation[1]
-            self.pose_msg.pose.position.z = self.data.oMi[5].translation[2]
+            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0]
+            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1]
+            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2]
             self.pose_msg.pose.orientation.x = quat.x
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z

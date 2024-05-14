@@ -336,7 +336,7 @@
   <joint name="arm_joint_7" type="fixed">
     <parent link="arm_link_6" />
     <child link="tip" />
-    <origin rpy="0 0 0" xyz="0 0 0.115" />
+    <origin rpy="3.14 0 0" xyz="0 0 0.04" />
     <axis xyz="0 1 0" />
   </joint>
 
@@ -345,9 +345,9 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.0" />
       <geometry>
-        <sphere radius="0.01" />
+        <sphere radius="0.04" />
       </geometry>
-      <material name="omni/Red" />
+      <material name="omni/Yellow" />
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.0" />
