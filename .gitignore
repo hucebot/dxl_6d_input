@@ -49,3 +49,9 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+hardware/simpleGimball/~$handle.SLDPRT
+hardware/simpleGimball/~$hub1.SLDPRT
+hardware/simpleGimball/~$motorgl30.SLDPRT
+hardware/simpleGimball/~$motorMount1.SLDPRT
+hardware/simpleGimball/~$motorMount2.SLDPRT
+hardware/~$armAssembly.SLDASM
