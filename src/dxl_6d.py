@@ -62,6 +62,8 @@ class Dxl6d:
                 data[i - 1] = (present_position - 2048.) / 2048. * math.pi
                 if i == 2 or i == 5:
                     data[i-1] = -data[i-1]
+                if i == 6:
+                    data[i-1] -= math.pi    
                 print(present_position, data[i-1] / math.pi * 180)
             q = np.array(data)
             pinocchio.framesForwardKinematics(self.model, self.data, q)
@@ -74,9 +76,9 @@ class Dxl6d:
             msg.data = data
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
             self.pose_msg.header.frame_id = "map"
-            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0]
-            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1]
-            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2]
+            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0] * 2.0
+            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1] * 2.0
+            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2] * 2.0
             self.pose_msg.pose.orientation.x = quat.x
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z

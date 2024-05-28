@@ -29,6 +29,15 @@
     <color rgba="0.4 0.4 0.4 1" />
   </material>
 
+  <!-- <link name="control_link">
+  </link>
+  
+  <joint type="fixed">
+    <parent link="base_link"/>
+    <child link="control_link"/>
+    <origin rpy="0 0 3.14" xyz=" 0 0 0"/>
+  </joint> -->
+
 
   <!-- foot for arm-->
   <link name="base_link">
@@ -40,7 +49,7 @@
   </link>
   <!-- joint between base_link and arm_0_link -->
   <joint name="arm_joint_0" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0" />
+    <origin rpy="0 0 3.1415" xyz="0 0 0" />
     <parent link="base_link" />
     <child link="arm_link_0" />
   </joint>
@@ -336,7 +345,8 @@
   <joint name="arm_joint_7" type="fixed">
     <parent link="arm_link_6" />
     <child link="tip" />
-    <origin rpy="3.14 0 0" xyz="0 0 0.04" />
+    <!-- origin rpy="3.14 0 0" xyz="0 0 0.04" / -->
+    <origin rpy="3.1415 0. 0." xyz="0 0 0.04"/>
     <axis xyz="0 1 0" />
   </joint>
 
