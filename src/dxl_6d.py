@@ -4,7 +4,7 @@ import math
 import pinocchio
 import numpy as np
 import rospy
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Float32
 from geometry_msgs.msg import PoseStamped
 
 # these should be ros parameters, for future work
@@ -13,7 +13,7 @@ DEVICENAME                  = '/dev/ttyUSB0'
 BAUDRATE                    = 1000000
 ADDR_PRESENT_POSITION       = 132
 LEN_PRESENT_POSITION        = 4         # Data Byte Length
-IDS                         = [1,2,3,4,5,6]
+IDS                         = [1,2,3,4,5,6,7]
 urdf_filename = 'src/dxl_6d_input/src/arm.urdf'
 
 
@@ -22,7 +22,7 @@ class Dxl6d:
     def __init__(self):
         ###### pinocchio
         self.model = pinocchio.buildModelFromUrdf(urdf_filename)
-        self.data = self.model.createData()
+        self.data = self.model.createData() # pinocchio data object
       
         ##### dynamixel
         self.portHandler = PortHandler(DEVICENAME)
@@ -38,13 +38,19 @@ class Dxl6d:
             self.groupSyncRead.addParam(i)
 
         ###### ROS
-        self.pub = rospy.Publisher('pos', PoseStamped, queue_size=10)
+        self.pub_pos = rospy.Publisher('/dxl_input/pos', PoseStamped, queue_size=10)
+        self.pub_gripper = rospy.Publisher('/dxl_input/gripper', Float32, queue_size=10)
         rospy.init_node('dxl_input', anonymous=True)
         self.rate = rospy.Rate(100) # 100hz
         self.pose_msg = PoseStamped()
+        self.gripper_msg = Float32()
+
+        # check the available IDS
+    
+    def ping(self, dxl_id):
+        pass
 
     def loop(self):
-        msg = Float64MultiArray()
         data = [None] * len(IDS)
         while not rospy.is_shutdown():
             dxl_comm_result = self.groupSyncRead.txRxPacket()
@@ -63,17 +69,17 @@ class Dxl6d:
                 if i == 2 or i == 5:
                     data[i-1] = -data[i-1]
                 if i == 6:
-                    data[i-1] -= math.pi    
+                    data[i-1] -= math.pi    # modification by enrico mingo
                 print(present_position, data[i-1] / math.pi * 180)
-            q = np.array(data)
-            pinocchio.framesForwardKinematics(self.model, self.data, q)
+            q = np.array(data[0:-1])
+            pinocchio.framesForwardKinematics(self.model, self.data, q) # we ignore the gripper in the kinematics
             frame_id = self.model.getFrameId("tip")
             print(("{:<24} : {: .3f} {: .3f} {: .3f}"
                     .format("tip", *self.data.oMf[frame_id].translation.T.flat )))
             # for name, oMi in zip(self.model.names, self.data.oMi):
             #     print(("{:<24} : {: .3f} {: .3f} {: .3f}"
             #         .format( name, *oMi.translation.T.flat )))
-            msg.data = data
+
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
             self.pose_msg.header.frame_id = "map"
             self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0] * 2.0
@@ -83,9 +89,18 @@ class Dxl6d:
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z
             self.pose_msg.pose.orientation.w = quat.w
-            
-            print(self.pose_msg)
-            self.pub.publish(self.pose_msg)
+
+
+
+            # gripper: fully open = -1.2, fully closed = -2.05
+            # -> normalize so that 0 = closed, 1 = open
+            g = (data[-1] + 1.2) / (- 2.05 + 1.2)
+            self.gripper_msg.data = np.clip(g, 0, 1)
+
+            print(self.pose_msg, self.gripper_msg)
+
+            self.pub_pos.publish(self.pose_msg)
+            self.pub_gripper.publish(self.gripper_msg)
             self.rate.sleep()
 
         # Close port
