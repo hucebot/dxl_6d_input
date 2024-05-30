@@ -70,12 +70,11 @@ class Dxl6d:
                     data[i-1] = -data[i-1]
                 if i == 6:
                     data[i-1] -= math.pi    # modification by enrico mingo
-                print(present_position, data[i-1] / math.pi * 180)
+            
+                #print(present_position, data[i-1] / math.pi * 180)
             q = np.array(data[0:-1])
             pinocchio.framesForwardKinematics(self.model, self.data, q) # we ignore the gripper in the kinematics
             frame_id = self.model.getFrameId("tip")
-            print(("{:<24} : {: .3f} {: .3f} {: .3f}"
-                    .format("tip", *self.data.oMf[frame_id].translation.T.flat )))
             # for name, oMi in zip(self.model.names, self.data.oMi):
             #     print(("{:<24} : {: .3f} {: .3f} {: .3f}"
             #         .format( name, *oMi.translation.T.flat )))
@@ -97,7 +96,9 @@ class Dxl6d:
             g = (data[-1] + 1.2) / (- 2.05 + 1.2)
             self.gripper_msg.data = np.clip(g, 0, 1)
 
-            print(self.pose_msg, self.gripper_msg)
+            #print(self.pose_msg, self.gripper_msg)
+            print(("{:<24} : {: .3f} {: .3f} {: .3f} {: .2f}"
+                    .format("tip", *self.data.oMf[frame_id].translation.T.flat , self.gripper_msg.data)))
 
             self.pub_pos.publish(self.pose_msg)
             self.pub_gripper.publish(self.gripper_msg)
