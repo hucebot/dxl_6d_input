@@ -9,4 +9,4 @@ docker run \
         --privileged \
         -v /dev:/dev \
         --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-        -v $HOME/Desktop/Inria/ROS:/catkin_ws dxl_6d:latest
+        dxl_6d:latest
