@@ -1,0 +1,23 @@
+<launch>
+
+    <arg name="protocol_version" default="2.0" />
+    <arg name="devicename" default="/dev/ttyUSB0" />
+    <arg name="baudrate" default="1000000" />
+    <arg name="addr_present_position" default="132" />
+    <arg name="len_present_position" default="4" />
+    <arg name="ids" default="1,2,3,4,5,6,7" />
+    <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
+    <arg name="debuginfo" default="false" />
+
+
+    <node name="dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
+        <param name="protocol_version" value="$(arg protocol_version)" />
+        <param name="devicename" value="$(arg devicename)" />
+        <param name="baudrate" value="$(arg baudrate)" />
+        <param name="addr_present_position" value="$(arg addr_present_position)" />
+        <param name="len_present_position" value="$(arg len_present_position)" />
+        <param name="ids" value="$(arg ids)" />
+        <param name="urdf_filename" value="$(arg urdf_filename)" />
+        <param name="debuginfo" value="$(arg debuginfo)" />
+    </node>
+</launch>
