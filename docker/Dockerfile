@@ -25,9 +25,8 @@ RUN mkdir -p /root/catkin_ws/src
 WORKDIR /root/catkin_ws/src
 
 ###### Clone the necessary repositories
-RUN git clone https://github.com/hucebot/dxl_6d_input.git
+RUN git clone --branch devel-clean-code https://github.com/hucebot/dxl_6d_input.git
 WORKDIR /root/catkin_ws/src/dxl_6d_input
-RUN git checkout devel-clean-code
 
 ###### Source the ROS setup.bash
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
