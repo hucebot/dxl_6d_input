@@ -1,0 +1,49 @@
+<launch>
+    <!-- Left Arm -->
+	<arg name="controlled_frame" default="gripper_left_grasping_frame"/>
+	<node pkg="tiago_dual_cartesio_config" type="teleop_bridge.py" name="right_left_teleoperation" output="screen">
+		<remap from="/teleop_pose" to="/dxl_input/left_pos_gripper"/>
+		<param name="controlled_frame" type="str" value="$(arg controlled_frame)" />
+	</node>
+	
+    <!-- Left Gripper -->
+	<arg name="controller_gripper" default="gripper_left_controller"/>
+	<arg name="controller_gripper_joints" default="[gripper_left_left_finger_joint, gripper_left_right_finger_joint]"/>
+	<arg name="TELEOP_MAX" default="0."/>
+	<arg name="TELEOP_MIN" default="1."/>
+	<arg name="GRIPPER_MAX" default="0.044"/>
+	<arg name="GRIPPER_MIN" default="0.010"/>
+	<node pkg="tiago_dual_cartesio_config" type="teleop_gripper_bridge.py" name="left_arm_teleoperation_gripper" output="screen">
+		<remap from="/teleop_gripper" to="/dxl_input/left_gripper"/>
+		<param name="controller_gripper" type="str" value="$(arg controller_gripper)" />
+		<rosparam param="controller_gripper_joints" subst_value="True">$(arg controller_gripper_joints)</rosparam>
+		<param name="TELEOP_MAX" type="double" value="$(arg TELEOP_MAX)" />
+		<param name="TELEOP_MIN" type="double" value="$(arg TELEOP_MIN)" />Ù
+		<param name="GRIPPER_MAX" type="double" value="$(arg GRIPPER_MAX)" />
+		<param name="GRIPPER_MIN" type="double" value="$(arg GRIPPER_MIN)" />
+	</node>
+
+    <!-- Right Arm -->
+    <arg name="controlled_frame" default="gripper_right_grasping_frame"/>
+	<node pkg="tiago_dual_cartesio_config" type="teleop_bridge.py" name="right_arm_teleoperation" output="screen">
+		<remap from="/teleop_pose" to="/dxl_input/right_pos_gripper"/>
+		<param name="controlled_frame" type="str" value="$(arg controlled_frame)" />
+	</node>
+	
+    <!-- Right Gripper -->
+	<arg name="controller_gripper" default="gripper_right_controller"/>
+	<arg name="controller_gripper_joints" default="[gripper_right_left_finger_joint, gripper_right_right_finger_joint]"/>
+	<arg name="TELEOP_MAX" default="0."/>
+	<arg name="TELEOP_MIN" default="1."/>
+	<arg name="GRIPPER_MAX" default="0.044"/>
+	<arg name="GRIPPER_MIN" default="0.010"/>
+	<node pkg="tiago_dual_cartesio_config" type="teleop_gripper_bridge.py" name="right_arm_teleoperation_gripper" output="screen">
+		<remap from="/teleop_gripper" to="/dxl_input/right_gripper"/>
+		<param name="controller_gripper" type="str" value="$(arg controller_gripper)" />
+		<rosparam param="controller_gripper_joints" subst_value="True">$(arg controller_gripper_joints)</rosparam>
+		<param name="TELEOP_MAX" type="double" value="$(arg TELEOP_MAX)" />
+		<param name="TELEOP_MIN" type="double" value="$(arg TELEOP_MIN)" />Ù
+		<param name="GRIPPER_MAX" type="double" value="$(arg GRIPPER_MAX)" />
+		<param name="GRIPPER_MIN" type="double" value="$(arg GRIPPER_MIN)" />
+	</node>
+</launch>
