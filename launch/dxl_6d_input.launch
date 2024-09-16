@@ -20,4 +20,7 @@
         <param name="urdf_filename" value="$(arg urdf_filename)" />
         <param name="debuginfo" value="$(arg debuginfo)" />
     </node>
+
+    <node name="tiago_bridge" pkg="dxl_6d_input" type="tiago_bridge.py" output="screen">
+    </node>
 </launch>
