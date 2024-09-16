@@ -22,7 +22,7 @@ mobile_base_cmd_pub = None
 mobile_base_cmd_msg = Twist()
 
 rate_ = 100. #10.
-time_duration = 0.5 #1.0
+time_duration = 0.8 #1.0
 
 send_commands = True
 
