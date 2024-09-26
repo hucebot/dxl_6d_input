@@ -55,3 +55,6 @@ hardware/simpleGimball/~$motorgl30.SLDPRT
 hardware/simpleGimball/~$motorMount1.SLDPRT
 hardware/simpleGimball/~$motorMount2.SLDPRT
 hardware/~$armAssembly.SLDASM
+
+*.FCBak
+
