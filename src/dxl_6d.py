@@ -17,13 +17,15 @@ class Dxl6d:
         ###### ROS parameters (can be set through launch files or parameter server)
         self.urdf_filename = rospy.get_param('~urdf_filename', 'src/dxl_6d_input/src/arm.urdf')  # Path to the URDF file
         self.ids = rospy.get_param('~ids', [1,2,3,4,5,6,7])  # Dynamixel motor IDs
-        self.ids = [1,2,3,4,5,6,7]
+        self.ids = self.ids.split(',')  # Split the string into a list
+        self.ids = [int(i) for i in self.ids]  # Convert to integers
         self.devicename = rospy.get_param('~devicename', '/dev/ttyUSB0')  # Device name for serial communication
         self.baudrate = int(rospy.get_param('~baudrate', 1000000))  # Baudrate for communication
         self.protocol_version = float(rospy.get_param('~protocol_version', 2.0))  # Dynamixel protocol version
         self.addr_present_position = int(rospy.get_param('~addr_present_position', 132))  # Address for present position
         self.len_present_position = int(rospy.get_param('~len_present_position', 4))  # Length of the position data
         self.debuginfo = bool(rospy.get_param('~debuginfo', False))  # Enable/disable debug info
+        self.arm_side = rospy.get_param('~arm_side', 'right')  # Side of the arm (right or left)
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
@@ -50,16 +52,14 @@ class Dxl6d:
         self.disable_torque()  # Disable torque for all motors
 
         ###### ROS publishers and subscribers
-        self.pub_pos = rospy.Publisher('/dxl_input/pos', PoseStamped, queue_size=10)  # Publisher for position
-        self.pub_gripper = rospy.Publisher('/dxl_input/gripper', Float32, queue_size=10)  # Publisher for gripper status
+        pos_topic = f'/dxl_input/pos_{self.arm_side}'  # Topic for position data
+        gripper_topic = f'/dxl_input/gripper_{self.arm_side}'  # Topic for gripper control
+        self.pub_pos = rospy.Publisher(pos_topic, PoseStamped, queue_size=10)  # Publisher for position
+        self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)  # Publisher for gripper status
 
         self.rate = rospy.Rate(100)  # Loop rate in Hz
         self.pose_msg = PoseStamped()  # Pose message to publish
         self.gripper_msg = Float32()  # Gripper message to publish
-
-    # Callback for receiving the fixed position flag
-    def fixed_position_callback(self, msg):
-        self.fixed_position = msg.data
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -120,17 +120,15 @@ class Dxl6d:
                 print("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
 
             # Get present position of each motor
-            for i in self.ids:
-                dxl_getdata_result = self.groupSyncRead.isAvailable(i, self.addr_present_position, self.len_present_position)
+            for i, id_ in enumerate(self.ids, start=1):
+                dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
                 if not dxl_getdata_result:
                     rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
 
-                present_position = self.groupSyncRead.getData(i, self.addr_present_position, self.len_present_position)
+                present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
                 data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
-                if i == 2 or i == 5:
+                if i == 2 or i == 3 or i == 4:
                     data[i-1] = -data[i-1]  # Invert direction for specific motors
-                if i == 6:
-                    data[i-1] -= math.pi  # Adjust for motor 6
 
             q = np.array(data[0:-1])  # Kinematic configuration excluding the gripper
             pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
@@ -147,8 +145,8 @@ class Dxl6d:
             self.pose_msg.pose.orientation.z = quat.z
             self.pose_msg.pose.orientation.w = quat.w
 
-            # Normalize the gripper data (open: -1.2, closed: -2.05)
-            g = (data[-1] + 1.2) / (- 2.05 + 1.2)
+            # Normalize the gripper data (open: -0.1135, closed: -0.3227)
+            g = (data[-1] + 0.1135) / (- 0.3227 + 0.1135)
             self.gripper_msg.data = np.clip(g, 0, 1)  # Clip between 0 and 1
             
             # Publish the pose and gripper data
@@ -156,10 +154,8 @@ class Dxl6d:
             self.pub_gripper.publish(self.gripper_msg)
             self.rate.sleep()
 
-        # Close the communication port when done
         self.portHandler.closePort()
 
-# Entry point for the script
 if __name__ == '__main__':
-    node = Dxl6d()  # Create the node object
-    node.loop()  # Start the main loop
+    node = Dxl6d()
+    node.loop()

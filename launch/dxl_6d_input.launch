@@ -1,16 +1,16 @@
 <launch>
 
     <arg name="protocol_version" default="2.0" />
-    <arg name="devicename" default="/dev/ttyUSB0" />
+    <arg name="devicename" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->
     <arg name="baudrate" default="1000000" />
     <arg name="addr_present_position" default="132" />
     <arg name="len_present_position" default="4" />
-    <arg name="ids" default="1,2,3,4,5,6,7" />
+    <arg name="ids" default="1,2,3,4,5,6,7"/>
     <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
     <arg name="debuginfo" default="false" />
+    <arg name="arm_side" default="left" />
 
-
-    <node name="dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
+    <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
         <param name="protocol_version" value="$(arg protocol_version)" />
         <param name="devicename" value="$(arg devicename)" />
         <param name="baudrate" value="$(arg baudrate)" />
@@ -19,8 +19,29 @@
         <param name="ids" value="$(arg ids)" />
         <param name="urdf_filename" value="$(arg urdf_filename)" />
         <param name="debuginfo" value="$(arg debuginfo)" />
+        <param name="arm_side" value="$(arg arm_side)" />
     </node>
 
-    <node name="tiago_bridge" pkg="dxl_6d_input" type="tiago_bridge.py" output="screen">
+    <arg name="protocol_version" default="2.0" />
+    <arg name="devicename" default="/dev/ttyUSB1" /> <!-- Change this to the correct port -->
+    <arg name="baudrate" default="1000000" />
+    <arg name="addr_present_position" default="132" />
+    <arg name="len_present_position" default="4" />
+    <arg name="ids" default="11,12,13,14,15,16,17"/>
+    <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
+    <arg name="debuginfo" default="false" />
+    <arg name="arm_side" default="right" />
+
+    <node name="right_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
+        <param name="protocol_version" value="$(arg protocol_version)" />
+        <param name="devicename" value="$(arg devicename)" />
+        <param name="baudrate" value="$(arg baudrate)" />
+        <param name="addr_present_position" value="$(arg addr_present_position)" />
+        <param name="len_present_position" value="$(arg len_present_position)" />
+        <param name="ids" value="$(arg ids)" />
+        <param name="urdf_filename" value="$(arg urdf_filename)" />
+        <param name="debuginfo" value="$(arg debuginfo)" />
+        <param name="arm_side" value="$(arg arm_side)" />
     </node>
+
 </launch>
