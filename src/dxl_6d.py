@@ -137,9 +137,9 @@ class Dxl6d:
             # Fill pose message with position and orientation data
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
             self.pose_msg.header.frame_id = "map"
-            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0] * 2.0
-            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1] * 2.0
-            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2] * 2.0
+            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0] #* 2.0
+            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1] #* 2.0
+            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2] #* 2.0
             self.pose_msg.pose.orientation.x = quat.x
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z
