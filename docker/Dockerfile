@@ -18,7 +18,7 @@ RUN pip3 install meshcat
 RUN apt-get install -yy python3-catkin-tools
 RUN apt-get install -yy terminator
 RUN apt-get install -yy git
-RUN apt-get install -yy nano
+RUN apt-get install -yy gedit
 
 ###### Create a workspace
 RUN mkdir -p /root/catkin_ws/src
