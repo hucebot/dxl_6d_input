@@ -32,40 +32,40 @@ class Dxl6d:
         self.addr_goal_position = 116
 
         ###### Pinocchio for kinematics
-        self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)  # Load robot model from URDF
-        self.data = self.model.createData()  # Create data for kinematic computations
+        self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
+        self.data = self.model.createData()
       
         ##### Dynamixel initialization
         self.portHandler = PortHandler(self.devicename)
         self.packetHandler = PacketHandler(self.protocol_version)
-        if not self.portHandler.openPort():  # Open the communication port
+        if not self.portHandler.openPort():
             rospy.logerr("Failed to open the port")
-            quit()  # Exit on error
-        if not self.portHandler.setBaudRate(self.baudrate):  # Set the baudrate
+            quit() 
+        if not self.portHandler.setBaudRate(self.baudrate):
             rospy.logerr("Failed to change the baudrate")
             quit()
 
         self.groupSyncRead = GroupSyncRead(self.portHandler, self.packetHandler, self.addr_present_position, self.len_present_position)
         for i in self.ids:
-            self.groupSyncRead.addParam(i)  # Add motors to synchronous read
+            self.groupSyncRead.addParam(i)
 
-        self.disable_torque()  # Disable torque for all motors
+        self.disable_torque()
 
         ###### ROS publishers and subscribers
-        pos_topic = f'/dxl_input/pos_{self.arm_side}'  # Topic for position data
-        gripper_topic = f'/dxl_input/gripper_{self.arm_side}'  # Topic for gripper control
-        self.pub_pos = rospy.Publisher(pos_topic, PoseStamped, queue_size=10)  # Publisher for position
-        self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)  # Publisher for gripper status
+        pos_topic = f'/dxl_input/pos_{self.arm_side}'
+        gripper_topic = f'/dxl_input/gripper_{self.arm_side}' 
+        self.pub_pos = rospy.Publisher(pos_topic, PoseStamped, queue_size=10) 
+        self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)
 
-        self.rate = rospy.Rate(100)  # Loop rate in Hz
-        self.pose_msg = PoseStamped()  # Pose message to publish
-        self.gripper_msg = Float32()  # Gripper message to publish
+        self.rate = rospy.Rate(100) 
+        self.pose_msg = PoseStamped()
+        self.gripper_msg = Float32()
 
     # Enable torque for all motors
     def enable_torque(self):
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
-            if self.debuginfo:  # Print debug information if enabled
+            if self.debuginfo:
                 if dxl_comm_result != COMM_SUCCESS:
                     rospy.logerr(f"Failed to enable torque for ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
                 elif dxl_error != 0:
@@ -85,12 +85,11 @@ class Dxl6d:
                 else:
                     rospy.loginfo(f"Torque disabled for motor ID {dxl_id}")
 
-    # Move all motors to the initial position
     def go_to_initial_position(self):
-        initial_position = [44, 2560, 2560]
-        for motor_id, motor_position in enumerate(initial_position):
-            dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, motor_id + 1, self.torque_enable_addr, 1)
-            dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, motor_id + 1, self.addr_goal_position, motor_position)
+        initial_position = [] #TODO: Find initial position for each motor
+        for motor_id, motor_position in enumerate(initial_position, start=1):
+            dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, self.torque_enable_addr, 1)
+            dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, motor_id, self.addr_goal_position, motor_position)
             if self.debuginfo:
                 if dxl_comm_result != COMM_SUCCESS:
                     rospy.logerr(f"Failed to move motor ID {motor_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
@@ -99,11 +98,15 @@ class Dxl6d:
                 else:
                     rospy.loginfo(f"Motor ID {motor_id} moved to initial position")
 
-            rospy.sleep(0.3)  # Wait for the motor to reach the position
+            rospy.sleep(0.3)
 
     # Ping a motor (for future implementation)
     def ping(self, dxl_id):
-        pass
+        dxl_model_number, dxl_comm_result, dxl_error = self.packetHandler.ping(self.portHandler, dxl_id)
+        if dxl_comm_result != COMM_SUCCESS:
+            rospy.logerr(f"Failed to ping motor ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
+        elif dxl_error != 0:
+            rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
 
     # Print debug information for the robot state
     def debug(self, debuginfo):
@@ -115,9 +118,9 @@ class Dxl6d:
     def loop(self):
         data = [None] * len(self.ids)
         while not rospy.is_shutdown():
-            dxl_comm_result = self.groupSyncRead.txRxPacket()  # Read data from all motors
+            dxl_comm_result = self.groupSyncRead.txRxPacket()
             if dxl_comm_result != COMM_SUCCESS:
-                print("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
+                rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
 
             # Get present position of each motor
             for i, id_ in enumerate(self.ids, start=1):
