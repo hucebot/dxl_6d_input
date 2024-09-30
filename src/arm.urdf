@@ -59,12 +59,12 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.02725" />
       <geometry>
-        <box size="0.1143 0.1143 0.0545" />
+        <box size="0.1143 0.1143 0.0600" />
       </geometry>
       <material name="omni/LightGrey" />
     </visual>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.0545" />
+      <origin rpy="0 0 0" xyz="0 0 0.0600" />
       <geometry>
         <cylinder radius="0.04" length="0.01" />
       </geometry>
@@ -74,7 +74,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.02725" />
       <geometry>
-        <box size="0.1143 0.1143 0.0545" />
+        <box size="0.1143 0.1143 0.0600" />
       </geometry>
     </collision>
     <inertial>
@@ -92,7 +92,7 @@
     <parent link="arm_link_0" />
     <child link="arm_link_1" />
     <limit effort="5.0" lower="-3.1415926535" upper="3.1415926535" velocity="5.0" />
-    <origin rpy="0 0 0.0" xyz="0 0 0.0545" />
+    <origin rpy="0 0 0.0" xyz="0 0 0.0600" />
     <axis xyz="0 0 1" />
     <dynamics damping="0.5" />
   </joint>
@@ -102,13 +102,13 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.0615" />
       <geometry>
-        <box size="0.0402 0.05 0.111" />
+        <box size="0.0402 0.05 0.115" />
       </geometry>
       <material name="omni/Blue" />
     </visual>
 
     <visual>
-      <origin rpy="1.57 0 0" xyz="0 0 0.123" />
+      <origin rpy="1.57 0 0" xyz="0 0 0.115" />
       <geometry>
         <cylinder radius="0.025" length="0.054" />
       </geometry>
@@ -118,13 +118,13 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.0615" />
       <geometry>
-        <box size="0.0402 0.05 0.123" />
+        <box size="0.0402 0.05 0.115" />
       </geometry>
     </collision>
 
     <inertial>
       <!-- CENTER OF MASS -->
-      <origin rpy="0 0 0" xyz="0 0 0.0615" />
+      <origin rpy="0 0 0" xyz="0 0 0.115" />
       <mass value="0.190421352" />
       <!-- box inertia: 1/12*m(y^2+z^2), ... -->
       <inertia ixx="0.000279744834534" ixy="0" ixz="0" iyy="0.000265717763008" iyz="0"
@@ -137,7 +137,7 @@
     <parent link="arm_link_1" />
     <child link="arm_link_2" />
     <limit effort="5.0" lower="-1.57079632679" upper="1.57079632679" velocity="5.0" />
-    <origin rpy="0 0.0 0" xyz="0 0 0.123" />
+    <origin rpy="0 0.0 0" xyz="0 0 0.115" />
     <axis xyz="0 1 0" />
     <dynamics damping="0.5" />
   </joint>
@@ -147,12 +147,12 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.09375" />
       <geometry>
-        <box size="0.0356 0.05 0.2050" />
+        <box size="0.0356 0.05 0.2060" />
       </geometry>
       <material name="omni/Red" />
     </visual>
     <visual>
-      <origin rpy="1.57 0 0" xyz="0.02 0 0.2050" />
+      <origin rpy="1.57 0 0" xyz="0.02 0 0.2060" />
       <geometry>
         <cylinder radius="0.025" length="0.05" />
       </geometry>
@@ -163,7 +163,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.09375" />
       <geometry>
-        <box size="0.0356 0.05  0.2050" />
+        <box size="0.0356 0.05  0.2060" />
       </geometry>
     </collision>
     <inertial>
@@ -191,13 +191,13 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.0950" />
       <geometry>
-        <box size="0.0356 0.05 0.200" />
+        <box size="0.0356 0.05 0.198" />
       </geometry>
       <material name="omni/Yellow" />
     </visual>
 
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.200" />
+      <origin rpy="0 0 0" xyz="0 0 0.198" />
       <geometry>
         <cylinder radius="0.0402" length="0.01" />
       </geometry>
@@ -232,7 +232,7 @@
 
   <link name="arm_link_4">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.02" />
+      <origin rpy="0 0 0" xyz="0 0 0.01" />
       <geometry>
         <box size="0.0356 0.05 0.03" />
       </geometry>
@@ -250,7 +250,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.04" />
       <geometry>
-        <box size="0.0356 0.05 0.08" />
+        <box size="0.0356 0.05 0.03" />
       </geometry>
     </collision>
     <inertial>
@@ -266,7 +266,7 @@
   <joint name="arm_joint_5" type="revolute">
     <parent link="arm_link_4" />
     <child link="arm_link_5" />
-    <origin rpy="0 1.57 0" xyz="0 0 0.04" />
+    <origin rpy="0 1.57 0" xyz="0 0 0.045" />
     <axis xyz="0 1 0" />
     <limit effort="5.0" lower="-1.57079632679" upper="1.57079632679" velocity="5.0" />
 
