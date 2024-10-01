@@ -196,7 +196,11 @@ class Dxl6d:
             self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
             
             # Publish the pose and gripper data
+            if self.using_pedal and not self.send_command:
+                self.enable_torque()
+
             if self.send_command:
+                self.disable_torque()
                 self.pub_pos.publish(self.pose_msg)
                 self.pub_gripper.publish(self.gripper_msg)
 
