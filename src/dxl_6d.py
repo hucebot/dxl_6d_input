@@ -30,6 +30,7 @@ class Dxl6d:
         self.position_topic = rospy.get_param('~position_topic', '/dxl_input/pos_right')  # Topic for the current reference position
         self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')  # Topic for the gripper state
         self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')  # Topic for the robot position
+        self.space_scalar = float(rospy.get_param('~space_scalar', 2.0)) # Scalar for the workspace
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
@@ -37,6 +38,7 @@ class Dxl6d:
         self.initial_position = []
         self.robot_position = []
         self.first_message = True
+        self.reset_position = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -65,9 +67,14 @@ class Dxl6d:
         self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
+        rospy.Subscriber('/dxl_input/reset_position', Bool, self.reset_arm_position_callback)
+
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
+
+    def reset_arm_position_callback(self, msg):
+        self.reset_position = msg.data
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -148,6 +155,9 @@ class Dxl6d:
                 # Apply inversion of direction for specific motors
                 if i == 5:
                     data[i - 1] = -data[i - 1]
+                
+                if i == 1 and id_ == 11:
+                    data[i - 1] -= math.pi
 
             
             # Update joint state message with current joint positions
@@ -162,16 +172,16 @@ class Dxl6d:
             pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
             frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-            if initialized == False:
+            if initialized == False or self.reset_position:
                 self.initial_position = self.data.oMf[frame_id].translation.copy()
                 initialized = True
 
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
 
             self.pose_msg.header.frame_id = "ci/world"
-            self.pose_msg.pose.position.x = (self.data.oMf[frame_id].translation[0] - self.initial_position[0])* 2.0   + self.robot_position.x
-            self.pose_msg.pose.position.y = (self.data.oMf[frame_id].translation[1] - self.initial_position[1]) * 2.0  + self.robot_position.y
-            self.pose_msg.pose.position.z = (self.data.oMf[frame_id].translation[2] - self.initial_position[2]) * 2.0  + self.robot_position.z
+            self.pose_msg.pose.position.x = (self.data.oMf[frame_id].translation[0] - self.initial_position[0]) * self.space_scalar   + self.robot_position.x
+            self.pose_msg.pose.position.y = (self.data.oMf[frame_id].translation[1] - self.initial_position[1]) * self.space_scalar  + self.robot_position.y
+            self.pose_msg.pose.position.z = (self.data.oMf[frame_id].translation[2] - self.initial_position[2]) * self.space_scalar  + self.robot_position.z
             self.pose_msg.pose.orientation.x = quat.x
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z
@@ -179,11 +189,12 @@ class Dxl6d:
 
             # Normalize the gripper data (open: -0.1135, closed: -0.3227)
             g = (data[-1] + 0.1135) / (- 0.3227 + 0.1135)
-            self.gripper_msg.data = np.clip(g, 0, 1)  # Clip between 0 and 1
+            self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
             
             # Publish the pose and gripper data
-            self.pub_pos.publish(self.pose_msg)
-            self.pub_gripper.publish(self.gripper_msg)
+            if self.reset_position:
+                self.pub_pos.publish(self.pose_msg)
+                self.pub_gripper.publish(self.gripper_msg)
 
             self.rate.sleep()
 

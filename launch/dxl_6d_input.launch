@@ -6,14 +6,15 @@
     <arg name="len_present_position" default="4" />
     <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
     <arg name="debuginfo" default="false" />
+    <arg name="space_scalar" default="2.0" />
 
     <!-- Left arm -->
     <arg name="devicename_left" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->
     <arg name="ids_left" default="1,2,3,4,5,6,7"/>
-    <arg name="arm_side_left" default="right" /> <!-- Change this to the correct side -->
-    <arg name="left_position_topic" default="/dxl_input/pos_right" /> <!-- Change this to the correct topic -->
-    <arg name="left_gripper_topic" default="/dxl_input/gripper_right" /> <!-- Change this to the correct topic -->
-    <arg name="left_robot_position_topic" default="/cartesian/gripper_right_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
+    <arg name="arm_side_left" default="left" /> <!-- Change this to the correct side -->
+    <arg name="left_position_topic" default="/dxl_input/pos_left" /> <!-- Change this to the correct topic -->
+    <arg name="left_gripper_topic" default="/dxl_input/gripper_left" /> <!-- Change this to the correct topic -->
+    <arg name="left_robot_position_topic" default="/cartesian/gripper_left_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
     <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
         <param name="protocol_version" value="$(arg protocol_version)" />
@@ -28,6 +29,7 @@
         <param name="position_topic" value="$(arg left_position_topic)" />
         <param name="gripper_topic" value="$(arg left_gripper_topic)" />
         <param name="robot_position_topic" value="$(arg left_robot_position_topic)" />
+        <param name="space_scalar" value="$(arg space_scalar)" />
     
     </node>
 
@@ -52,6 +54,7 @@
         <param name="position_topic" value="$(arg right_position_topic)" />
         <param name="gripper_topic" value="$(arg right_gripper_topic)" />
         <param name="robot_position_topic" value="$(arg right_robot_position_topic)" />
+        <param name="space_scalar" value="$(arg space_scalar)" />
     </node>
 
      <!-- send the coman robot XML to param server -->
