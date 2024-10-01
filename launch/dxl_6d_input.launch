@@ -7,7 +7,7 @@
     <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
     <arg name="debuginfo" default="false" />
     <arg name="space_scalar" default="2.0" />
-    <arg name="using_pedal" default="false" />
+    <arg name="using_pedal" default="true" />
 
     <!-- Left arm -->
     <arg name="devicename_left" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->

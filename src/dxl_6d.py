@@ -39,6 +39,8 @@ class Dxl6d:
         self.initial_position = []
         self.robot_position = []
         self.first_message = True
+        self.initialized = False
+        self.reseting_position = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -69,6 +71,7 @@ class Dxl6d:
 
         if self.using_pedal:
             rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
+            rospy.Subscriber('/hucebot_pedal/reset_position', Bool, self.reset_position_callback)
             self.send_command = False
         else:
             self.send_command = True
@@ -77,8 +80,17 @@ class Dxl6d:
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
-    def reset_arm_position_callback(self, msg):
+    def send_command_robot(self, msg):
         self.send_command = msg.data
+
+    def reset_position_callback(self, msg):
+        if msg.data:
+            self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
+            self.initialized = True
+            self.reseting_position = True
+
+        else:
+            self.reseting_position = False
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -176,9 +188,9 @@ class Dxl6d:
             pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
             frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-            if initialized == False:
+            if self.initialized == False:
                 self.initial_position = self.data.oMf[frame_id].translation.copy()
-                initialized = True
+                self.initialized = True
 
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
 
@@ -199,7 +211,7 @@ class Dxl6d:
             if self.using_pedal and not self.send_command:
                 self.enable_torque()
 
-            if self.send_command:
+            if self.send_command and not self.reseting_position:
                 self.disable_torque()
                 self.pub_pos.publish(self.pose_msg)
                 self.pub_gripper.publish(self.gripper_msg)
