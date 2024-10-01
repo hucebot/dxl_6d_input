@@ -27,6 +27,9 @@ class Dxl6d:
         self.len_present_position = int(rospy.get_param('~len_present_position', 4))  # Length of the position data
         self.debuginfo = bool(rospy.get_param('~debuginfo', False))  # Enable/disable debug info
         self.arm_side = rospy.get_param('~arm_side', 'right')  # Side of the arm (right or left)
+        self.position_topic = rospy.get_param('~position_topic', '/dxl_input/pos_right')  # Topic for the current reference position
+        self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')  # Topic for the gripper state
+        self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')  # Topic for the robot position
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
@@ -57,12 +60,10 @@ class Dxl6d:
 
 
         ###### ROS publishers and subscribers
-        pos_topic = f'/dxl_input/pos_{self.arm_side}'
-        gripper_topic = f'/dxl_input/gripper_{self.arm_side}' 
-        self.pub_pos = rospy.Publisher(pos_topic, PoseStamped, queue_size=10) 
-        self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)
+        self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
+        self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
         self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
-        self.robot_position = rospy.wait_for_message('/cartesian/gripper_right_grasping_frame/current_reference', PoseStamped, timeout=5).pose.position
+        self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
@@ -165,7 +166,6 @@ class Dxl6d:
                 self.initial_position = self.data.oMf[frame_id].translation.copy()
                 initialized = True
 
-            print(self.robot_position, initialized)
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
 
             self.pose_msg.header.frame_id = "ci/world"

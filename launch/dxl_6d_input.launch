@@ -11,6 +11,9 @@
     <arg name="devicename_left" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->
     <arg name="ids_left" default="1,2,3,4,5,6,7"/>
     <arg name="arm_side_left" default="right" /> <!-- Change this to the correct side -->
+    <arg name="left_position_topic" default="/dxl_input/pos_right" /> <!-- Change this to the correct topic -->
+    <arg name="left_gripper_topic" default="/dxl_input/gripper_right" /> <!-- Change this to the correct topic -->
+    <arg name="robot_position_topic" default="/cartesian/gripper_right_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
     <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
         <param name="protocol_version" value="$(arg protocol_version)" />
@@ -22,12 +25,19 @@
         <param name="urdf_filename" value="$(arg urdf_filename)" />
         <param name="debuginfo" value="$(arg debuginfo)" />
         <param name="arm_side" value="$(arg arm_side_left)" />
+        <param name="position_topic" value="$(arg left_position_topic)" />
+        <param name="gripper_topic" value="$(arg left_gripper_topic)" />
+        <param name="robot_position_topic" value="$(arg robot_position_topic)" />
+    
     </node>
 
     <!-- Right arm -->
     <arg name="devicename_right" default="/dev/ttyUSB1" /> <!-- Change this to the correct port -->
     <arg name="ids_right" default="11,12,13,14,15,16,17"/>
     <arg name="arm_side_right" default="right" /> <!-- Change this to the correct side -->
+    <arg name="right_position_topic" default="/dxl_input/pos_right" /> <!-- Change this to the correct topic -->
+    <arg name="right_gripper_topic" default="/dxl_input/gripper_right" /> <!-- Change this to the correct topic -->
+    <arg name="robot_position_topic" default="/cartesian/gripper_right_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
     <node name="right_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
         <param name="protocol_version" value="$(arg protocol_version)" />
@@ -39,6 +49,9 @@
         <param name="urdf_filename" value="$(arg urdf_filename)" />
         <param name="debuginfo" value="$(arg debuginfo)" />
         <param name="arm_side" value="$(arg arm_side_right)" />
+        <param name="position_topic" value="$(arg right_position_topic)" />
+        <param name="gripper_topic" value="$(arg right_gripper_topic)" />
+        <param name="robot_position_topic" value="$(arg robot_position_topic)" />
     </node>
 
      <!-- send the coman robot XML to param server -->
