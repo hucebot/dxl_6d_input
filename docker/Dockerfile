@@ -19,6 +19,8 @@ RUN apt-get install -yy python3-catkin-tools
 RUN apt-get install -yy terminator
 RUN apt-get install -yy git
 RUN apt-get install -yy gedit
+RUN apt-get install -yy ros-noetic-rviz
+RUN apt-get install -yy ros-noetic-robot-state-publisher
 
 ###### Create a workspace
 RUN mkdir -p /root/catkin_ws/src

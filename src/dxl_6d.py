@@ -6,7 +6,9 @@ import pinocchio
 import numpy as np
 import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
+from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
+import tf
 
 # Class to handle communication with a 6-DOF Dynamixel robot
 class Dxl6d:
@@ -30,6 +32,9 @@ class Dxl6d:
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
         self.addr_goal_position = 116
+        self.initial_position = []
+        self.robot_position = []
+        self.first_message = True
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -51,11 +56,15 @@ class Dxl6d:
 
         self.disable_torque()
 
+
         ###### ROS publishers and subscribers
         pos_topic = f'/dxl_input/pos_{self.arm_side}'
         gripper_topic = f'/dxl_input/gripper_{self.arm_side}' 
         self.pub_pos = rospy.Publisher(pos_topic, PoseStamped, queue_size=10) 
         self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)
+        self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
+        self.robot_position = rospy.wait_for_message('/cartesian/gripper_right_grasping_frame/current_reference', PoseStamped, timeout=5).pose.position
+        self.tf_broadcaster = tf.TransformBroadcaster()
 
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
@@ -117,6 +126,12 @@ class Dxl6d:
     # Main loop to control the robot
     def loop(self):
         data = [None] * len(self.ids)
+        joint_state_msg = JointState()
+        joint_state_msg.name = [f'arm_joint_{i}' for i in range(1, len(self.ids)+1)] 
+        joint_state_msg.velocity = []
+        joint_state_msg.effort = []
+        
+        initialized = False
         while not rospy.is_shutdown():
             dxl_comm_result = self.groupSyncRead.txRxPacket()
             if dxl_comm_result != COMM_SUCCESS:
@@ -130,19 +145,35 @@ class Dxl6d:
 
                 present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
                 data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
-                if i == 2 or i == 3 or i == 4:
-                    data[i-1] = -data[i-1]  # Invert direction for specific motors
 
+                # Apply inversion of direction for specific motors
+                if i == 5:
+                    data[i - 1] = -data[i - 1]
+
+            
+            # Update joint state message with current joint positions
+            joint_state_msg.position = data 
+            joint_state_msg.header.stamp = rospy.Time.now()  # Add timestamp
+
+            # Publish the joint states
+            self.robot_state_publisher.publish(joint_state_msg)
+
+            # Forward kinematics and pose/gripper publishing (your existing code)
             q = np.array(data[0:-1])  # Kinematic configuration excluding the gripper
             pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
             frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-            # Fill pose message with position and orientation data
+            if initialized == False:
+                self.initial_position = self.data.oMf[frame_id].translation.copy()
+                initialized = True
+
+            print(self.robot_position, initialized)
             quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
-            self.pose_msg.header.frame_id = "map"
-            self.pose_msg.pose.position.x = self.data.oMf[frame_id].translation[0] #* 2.0
-            self.pose_msg.pose.position.y = self.data.oMf[frame_id].translation[1] #* 2.0
-            self.pose_msg.pose.position.z = self.data.oMf[frame_id].translation[2] #* 2.0
+
+            self.pose_msg.header.frame_id = "ci/world"
+            self.pose_msg.pose.position.x = (self.data.oMf[frame_id].translation[0] - self.initial_position[0])* 2.0   + self.robot_position.x
+            self.pose_msg.pose.position.y = (self.data.oMf[frame_id].translation[1] - self.initial_position[1]) * 2.0  + self.robot_position.y
+            self.pose_msg.pose.position.z = (self.data.oMf[frame_id].translation[2] - self.initial_position[2]) * 2.0  + self.robot_position.z
             self.pose_msg.pose.orientation.x = quat.x
             self.pose_msg.pose.orientation.y = quat.y
             self.pose_msg.pose.orientation.z = quat.z
@@ -155,6 +186,7 @@ class Dxl6d:
             # Publish the pose and gripper data
             self.pub_pos.publish(self.pose_msg)
             self.pub_gripper.publish(self.gripper_msg)
+
             self.rate.sleep()
 
         self.portHandler.closePort()
