@@ -31,6 +31,7 @@ class Dxl6d:
         self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')  # Topic for the gripper state
         self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')  # Topic for the robot position
         self.space_scalar = float(rospy.get_param('~space_scalar', 2.0)) # Scalar for the workspace
+        self.using_pedal = bool(rospy.get_param('~using_pedal', False))  # Enable/disable pedal control
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
@@ -38,7 +39,6 @@ class Dxl6d:
         self.initial_position = []
         self.robot_position = []
         self.first_message = True
-        self.reset_position = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -67,14 +67,18 @@ class Dxl6d:
         self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
-        rospy.Subscriber('/dxl_input/reset_position', Bool, self.reset_arm_position_callback)
+        if self.using_pedal:
+            rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
+            self.send_command = False
+        else:
+            self.send_command = True
 
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
     def reset_arm_position_callback(self, msg):
-        self.reset_position = msg.data
+        self.send_command = msg.data
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -172,7 +176,7 @@ class Dxl6d:
             pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
             frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-            if initialized == False or self.reset_position:
+            if initialized == False:
                 self.initial_position = self.data.oMf[frame_id].translation.copy()
                 initialized = True
 
@@ -192,7 +196,7 @@ class Dxl6d:
             self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
             
             # Publish the pose and gripper data
-            if self.reset_position:
+            if self.send_command:
                 self.pub_pos.publish(self.pose_msg)
                 self.pub_gripper.publish(self.gripper_msg)
 
