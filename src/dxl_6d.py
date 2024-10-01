@@ -8,7 +8,6 @@ import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
-import tf
 
 # Class to handle communication with a 6-DOF Dynamixel robot
 class Dxl6d:
@@ -64,7 +63,6 @@ class Dxl6d:
         self.pub_gripper = rospy.Publisher(gripper_topic, Float32, queue_size=10)
         self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
         self.robot_position = rospy.wait_for_message('/cartesian/gripper_right_grasping_frame/current_reference', PoseStamped, timeout=5).pose.position
-        self.tf_broadcaster = tf.TransformBroadcaster()
 
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
