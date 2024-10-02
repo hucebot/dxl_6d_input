@@ -87,7 +87,7 @@ class Dxl6d:
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
-    def go_to_initial_position(self, time_to_move=5.0, steps=100):
+    def go_to_initial_position(self, time_to_move=2.0, steps=100):
         self.enable_torque()
         
         current_positions = []
@@ -100,8 +100,13 @@ class Dxl6d:
         time_per_step = time_to_move / steps
         
         for step_positions in interpolated_positions:
-            for i, id_ in enumerate(self.ids):
-                dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, id_, self.addr_goal_position, int(step_positions[i]))
+            for i, id_ in enumerate(self.ids, start=1):
+                if i == 5:
+                    step_positions[i - 1] = 4096 - step_positions[i - 1]
+                if i == 1 and id_ == 11:
+                    step_positions[i - 1] -= math.pi
+
+                dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, id_, self.addr_goal_position, int(step_positions[i-1]))
                 if self.debuginfo:
                     if dxl_comm_result != COMM_SUCCESS:
                         rospy.logerr(f"Failed to write goal position for ID {id_}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
