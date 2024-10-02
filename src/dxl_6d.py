@@ -45,7 +45,8 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        self.initial_position = [18, 2009, 1981, 4084, 113, 2075, 1981]
+        self.right_initial_position = [2064, 1869, 2037, 40, 105, 2024, 1984]
+        self.left_initial_position = [3, 1954, 2026, 2045, 1908, 57, 1980]
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -66,7 +67,7 @@ class Dxl6d:
             self.groupSyncRead.addParam(i)
 
         self.disable_torque()
-        self.go_to_initial_position()
+        #self.go_to_initial_position()
 
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
@@ -95,14 +96,18 @@ class Dxl6d:
             dxl_present_position, _, _ = self.packetHandler.read4ByteTxRx(self.portHandler, id_, self.addr_present_position)
             current_positions.append(dxl_present_position)
         
-        interpolated_positions = np.linspace(current_positions, self.initial_position, steps)
+        if self.arm_side == 'right':
+            initial_position = self.right_initial_position
+        else:
+            initial_position = self.left_initial_position
+        interpolated_positions = np.linspace(current_positions, initial_position, steps)
         
         time_per_step = time_to_move / steps
         
         for step_positions in interpolated_positions:
             for i, id_ in enumerate(self.ids, start=1):
                 if i == 5:
-                    step_positions[i - 1] = 4096 - step_positions[i - 1]
+                    step_positions[i - 1] = 2048 - step_positions[i - 1]
                 if i == 1 and id_ == 11:
                     step_positions[i - 1] -= math.pi
 
