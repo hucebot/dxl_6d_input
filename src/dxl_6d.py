@@ -41,9 +41,7 @@ class Dxl6d:
         self.robot_position = []
         self.first_message = True
         self.initialized = False
-        self.reseting_position = False
         self.teleoperation_mode = True
-        self.torque_disabled = True
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -65,7 +63,6 @@ class Dxl6d:
 
         self.disable_torque()
 
-
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
         self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
@@ -77,7 +74,6 @@ class Dxl6d:
 
         if self.using_pedal:
             rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
-            rospy.Subscriber('/hucebot_pedal/reset_position', Bool, self.reset_position_callback)
             self.send_command = False
         else:
             self.send_command = True
@@ -92,22 +88,8 @@ class Dxl6d:
     def send_command_robot(self, msg):
         self.send_command = msg.data
 
-    def reset_position_callback(self, msg):
-        if msg.data:
-            if self.torque_disabled:
-                self.disable_torque()
-            self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initialized = False
-            self.reseting_position = True
-
-        else:
-            if not self.torque_disabled:
-                self.enable_torque()
-            self.reseting_position = False
-
     # Enable torque for all motors
     def enable_torque(self):
-        self.torque_disabled = False
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
             if self.debuginfo:
@@ -120,7 +102,6 @@ class Dxl6d:
 
     # Disable torque for all motors
     def disable_torque(self):
-        self.torque_disabled = True
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 0)
             if self.debuginfo:
@@ -224,15 +205,11 @@ class Dxl6d:
                 self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
                 
                 # Publish the pose and gripper data
-                if self.using_pedal and not self.send_command and not self.reseting_position and self.torque_disabled:
+                if self.using_pedal and not self.send_command:
                     self.enable_torque()
 
-                if self.using_pedal and self.reseting_position and not self.torque_disabled:
+                if self.send_command:
                     self.disable_torque()
-
-                if self.send_command and not self.reseting_position:
-                    if not self.torque_disabled:
-                        self.disable_torque()
                     self.pub_pos.publish(self.pose_msg)
                     self.pub_gripper.publish(self.gripper_msg)
 
