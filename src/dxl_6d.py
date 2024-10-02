@@ -43,7 +43,6 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        self.reset_position = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -73,7 +72,6 @@ class Dxl6d:
 
         if self.using_streamdeck:
             rospy.Subscriber('/hucebot_streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
-            rospy.Subscriber('/hucebot_streamdeck/reset_position', Bool, self.reset_position_callback)
 
         if self.using_pedal:
             rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
@@ -84,14 +82,6 @@ class Dxl6d:
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
-
-    def reset_position_callback(self, msg):
-        if msg.data and self.is_torque_enabled:
-            self.reset_position = True
-            self.disable_torque()
-        elif not msg.data and not self.is_torque_enabled:
-            self.reset_position = False
-            self.enable_torque()
 
     def teleoperation_mode_callback(self, msg):
         self.teleoperation_mode = msg.data
@@ -203,11 +193,7 @@ class Dxl6d:
                 self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
                 
                 # Publish the pose and gripper data
-                if self.reset_position:
-                    self.send_command = False
-                    self.disable_torque()
-
-                elif self.using_pedal and not self.send_command:
+                if self.using_pedal and not self.send_command:
                     if not self.is_torque_enabled:
                         self.enable_torque()
 
