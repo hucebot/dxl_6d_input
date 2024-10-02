@@ -8,6 +8,7 @@
     <arg name="debuginfo" default="false" />
     <arg name="space_scalar" default="2.0" />
     <arg name="using_pedal" default="true" />
+    <arg name="using_streamdeck" default="false" />
 
     <!-- Left arm -->
     <arg name="devicename_left" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->
@@ -32,6 +33,7 @@
         <param name="robot_position_topic" value="$(arg left_robot_position_topic)" />
         <param name="space_scalar" value="$(arg space_scalar)" />
         <param name="using_pedal" value="$(arg using_pedal)" />
+        <param name="using_streamdeck" value="$(arg using_streamdeck)" />
     </node>
 
     <!-- Right arm -->
@@ -57,6 +59,7 @@
         <param name="robot_position_topic" value="$(arg right_robot_position_topic)" />
         <param name="space_scalar" value="$(arg space_scalar)" />
         <param name="using_pedal" value="$(arg using_pedal)" />
+        <param name="using_streamdeck" value="$(arg using_streamdeck)" />
     </node>
 
      <!-- send the coman robot XML to param server -->
