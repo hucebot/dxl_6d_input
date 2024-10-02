@@ -42,6 +42,7 @@ class Dxl6d:
         self.first_message = True
         self.initialized = False
         self.teleoperation_mode = True
+        self.is_torque_enabled = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -90,6 +91,7 @@ class Dxl6d:
 
     # Enable torque for all motors
     def enable_torque(self):
+        self.is_torque_enabled = True
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
             if self.debuginfo:
@@ -102,6 +104,7 @@ class Dxl6d:
 
     # Disable torque for all motors
     def disable_torque(self):
+        self.is_torque_enabled = False
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 0)
             if self.debuginfo:
@@ -206,10 +209,12 @@ class Dxl6d:
                 
                 # Publish the pose and gripper data
                 if self.using_pedal and not self.send_command:
-                    self.enable_torque()
+                    if not self.is_torque_enabled:
+                        self.enable_torque()
 
                 if self.send_command:
-                    self.disable_torque()
+                    if self.is_torque_enabled:
+                        self.disable_torque()
                     self.pub_pos.publish(self.pose_msg)
                     self.pub_gripper.publish(self.gripper_msg)
 
