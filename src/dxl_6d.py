@@ -98,6 +98,7 @@ class Dxl6d:
             self.reseting_position = True
 
         else:
+            self.enable_torque()
             self.reseting_position = False
 
     # Enable torque for all motors
