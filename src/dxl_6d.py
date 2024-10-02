@@ -81,7 +81,7 @@ class Dxl6d:
         else:
             self.send_command = True
 
-        self.rate = rospy.Rate(100) 
+        self.rate = rospy.Rate(10) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
