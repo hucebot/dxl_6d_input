@@ -45,8 +45,6 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        self.right_initial_position = [2064, 1869, 2037, 40, 105, 2024, 1984]
-        self.left_initial_position = [3, 1954, 2026, 2045, 1908, 57, 1980]
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -67,7 +65,6 @@ class Dxl6d:
             self.groupSyncRead.addParam(i)
 
         self.disable_torque()
-        #self.go_to_initial_position()
 
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
@@ -87,40 +84,6 @@ class Dxl6d:
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
-
-    def go_to_initial_position(self, time_to_move=2.0, steps=100):
-        self.enable_torque()
-        
-        current_positions = []
-        for id_ in self.ids:
-            dxl_present_position, _, _ = self.packetHandler.read4ByteTxRx(self.portHandler, id_, self.addr_present_position)
-            current_positions.append(dxl_present_position)
-        
-        if self.arm_side == 'right':
-            initial_position = self.right_initial_position
-        else:
-            initial_position = self.left_initial_position
-        interpolated_positions = np.linspace(current_positions, initial_position, steps)
-        
-        time_per_step = time_to_move / steps
-        
-        for step_positions in interpolated_positions:
-            for i, id_ in enumerate(self.ids, start=1):
-                if i == 5:
-                    step_positions[i - 1] = 2048 - step_positions[i - 1]
-                if i == 1 and id_ == 11:
-                    step_positions[i - 1] -= math.pi
-
-                dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, id_, self.addr_goal_position, int(step_positions[i-1]))
-                if self.debuginfo:
-                    if dxl_comm_result != COMM_SUCCESS:
-                        rospy.logerr(f"Failed to write goal position for ID {id_}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
-                    elif dxl_error != 0:
-                        rospy.logerr(f"Dynamixel error for ID {id_}: {self.packetHandler.getRxPacketError(dxl_error)}")
-                    else:
-                        rospy.loginfo(f"Intermediate goal position set for motor ID {id_}")
-            
-            time.sleep(time_per_step)
 
     def teleoperation_mode_callback(self, msg):
         self.teleoperation_mode = msg.data
