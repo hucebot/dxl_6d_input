@@ -43,6 +43,7 @@ class Dxl6d:
         self.initialized = False
         self.reseting_position = False
         self.teleoperation_mode = True
+        self.torque_disabled = True
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -81,7 +82,7 @@ class Dxl6d:
         else:
             self.send_command = True
 
-        self.rate = rospy.Rate(10) 
+        self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
@@ -93,16 +94,20 @@ class Dxl6d:
 
     def reset_position_callback(self, msg):
         if msg.data:
+            if self.torque_disabled:
+                self.disable_torque()
             self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
             self.initialized = False
             self.reseting_position = True
 
         else:
-            self.enable_torque()
+            if not self.torque_disabled:
+                self.enable_torque()
             self.reseting_position = False
 
     # Enable torque for all motors
     def enable_torque(self):
+        self.torque_disabled = False
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
             if self.debuginfo:
@@ -115,6 +120,7 @@ class Dxl6d:
 
     # Disable torque for all motors
     def disable_torque(self):
+        self.torque_disabled = True
         for dxl_id in self.ids:
             dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 0)
             if self.debuginfo:
@@ -218,14 +224,15 @@ class Dxl6d:
                 self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
                 
                 # Publish the pose and gripper data
-                if self.using_pedal and not self.send_command and not self.reseting_position:
+                if self.using_pedal and not self.send_command and not self.reseting_position and self.torque_disabled:
                     self.enable_torque()
 
-                if self.using_pedal and self.reseting_position:
+                if self.using_pedal and self.reseting_position and not self.torque_disabled:
                     self.disable_torque()
 
                 if self.send_command and not self.reseting_position:
-                    self.disable_torque()
+                    if not self.torque_disabled:
+                        self.disable_torque()
                     self.pub_pos.publish(self.pose_msg)
                     self.pub_gripper.publish(self.gripper_msg)
 
