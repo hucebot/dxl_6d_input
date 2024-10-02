@@ -72,6 +72,7 @@ class Dxl6d:
 
         if self.using_streamdeck:
             rospy.Subscriber('/hucebot_streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
+            rospy.Subscriber('/hucebot_streamdeck/reset_position', Bool, self.reset_position_callback)
 
         if self.using_pedal:
             rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
@@ -82,6 +83,12 @@ class Dxl6d:
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
+
+    def reset_position_callback(self, msg):
+        if msg.data and self.is_torque_enabled:
+            self.disable_torque()
+        elif not msg.data and not self.is_torque_enabled:
+            self.enable_torque()
 
     def teleoperation_mode_callback(self, msg):
         self.teleoperation_mode = msg.data
@@ -114,21 +121,6 @@ class Dxl6d:
                     rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
                 else:
                     rospy.loginfo(f"Torque disabled for motor ID {dxl_id}")
-
-    def go_to_initial_position(self):
-        initial_position = [] #TODO: Find initial position for each motor
-        for motor_id, motor_position in enumerate(initial_position, start=1):
-            dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, self.torque_enable_addr, 1)
-            dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(self.portHandler, motor_id, self.addr_goal_position, motor_position)
-            if self.debuginfo:
-                if dxl_comm_result != COMM_SUCCESS:
-                    rospy.logerr(f"Failed to move motor ID {motor_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
-                elif dxl_error != 0:
-                    rospy.logerr(f"Dynamixel error for ID {motor_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
-                else:
-                    rospy.loginfo(f"Motor ID {motor_id} moved to initial position")
-
-            rospy.sleep(0.3)
 
     # Ping a motor (for future implementation)
     def ping(self, dxl_id):
