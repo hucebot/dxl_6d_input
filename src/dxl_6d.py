@@ -94,7 +94,7 @@ class Dxl6d:
     def reset_position_callback(self, msg):
         if msg.data:
             self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initialized = True
+            self.initialized = False
             self.reseting_position = True
 
         else:
@@ -197,7 +197,7 @@ class Dxl6d:
                 pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
                 frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-                if self.initialized == False or self.reseting_position:
+                if self.initialized == False:
                     self.initial_position = self.data.oMf[frame_id].translation.copy()
                     self.initialized = True
 
