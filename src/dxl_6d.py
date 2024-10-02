@@ -197,7 +197,7 @@ class Dxl6d:
                 pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
                 frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
-                if self.initialized == False:
+                if self.initialized == False or self.reseting_position:
                     self.initial_position = self.data.oMf[frame_id].translation.copy()
                     self.initialized = True
 
