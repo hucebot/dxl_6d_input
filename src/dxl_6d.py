@@ -104,7 +104,7 @@ class Dxl6d:
             if self.is_torque_enabled == True:
                 self.disable_torque()
             self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initial_position = self.data.oMf[frame_id].translation.copy()
+            self.initialized = False
 
         
 
