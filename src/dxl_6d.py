@@ -89,7 +89,7 @@ class Dxl6d:
         self.teleoperation_mode = msg.data
 
     def send_command_robot(self, msg):
-        if msg.axes[0] >= 0.8 and msg.axes[1] >= 0.8 or msg.axes[0] >= 0.8 and msg.axes[1] == 0:
+        if msg.axes[0] >= 0.8 and msg.axes[1] >= 0.8 or msg.axes[0] >= 0.8 and msg.axes[1] >= 0.8:
             self.send_command = False
             if self.is_torque_enabled == False:
                 self.enable_torque()
@@ -99,12 +99,12 @@ class Dxl6d:
             if self.is_torque_enabled == True:
                 self.disable_torque()
 
-        if msg.axes[1] <= -0.8 and msg.axes[0] >= 0.8 or msg.axes[1] <= -0.8 and msg.axes[0] == 0:
+        elif msg.axes[1] <= -0.8 and msg.axes[0] >= 0.8 or msg.axes[1] <= -0.8 and msg.axes[0] == 0:
             self.send_command = False
             if self.is_torque_enabled == True:
                 self.disable_torque()
             self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initialized == False
+            self.initial_position = self.data.oMf[frame_id].translation.copy()
 
         
 
