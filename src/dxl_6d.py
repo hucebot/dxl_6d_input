@@ -109,7 +109,7 @@ class Dxl6d:
             self.send_command = True
             self.disable_torque()
 
-        self.rate = rospy.Rate(100) 
+        self.rate = rospy.Rate(20) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
@@ -117,11 +117,12 @@ class Dxl6d:
         self.teleoperation_mode = msg.data
 
     def send_command_robot(self, msg):
-        if msg.axes[0] == 1:
+        if msg.axes[0] >= 0.8:
             self.send_command = False
             if self.is_torque_enabled == False:
                 self.enable_torque()
-        elif msg.axes[0] == -1:
+
+        elif msg.axes[0] <= -0.8:
             self.send_command = True
             if self.is_torque_enabled == True:
                 self.disable_torque()
