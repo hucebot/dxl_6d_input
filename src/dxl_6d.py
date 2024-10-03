@@ -10,6 +10,33 @@ import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
+from pykalman import KalmanFilter
+
+class KalmanFilterWrapper:
+    def __init__(self, n_joints, initial_state_mean=0, initial_covariance=1e-4):
+        self.n_joints = n_joints
+        self.kalman_filters = [KalmanFilter(
+            transition_matrices=[1],
+            observation_matrices=[1],
+            initial_state_mean=initial_state_mean,
+            initial_state_covariance=initial_covariance,
+            observation_covariance=0.1,
+            transition_covariance=0.1) for _ in range(n_joints)]
+        
+        self.state_means = [initial_state_mean for _ in range(n_joints)]
+        self.state_covariances = [initial_covariance for _ in range(n_joints)]
+
+    def filter_positions(self, positions):
+        filtered_positions = []
+        for i in range(self.n_joints):
+            self.state_means[i], self.state_covariances[i] = self.kalman_filters[i].filter_update(
+                self.state_means[i],
+                self.state_covariances[i],
+                observation=positions[i]
+            )
+            filtered_positions.append(self.state_means[i][0])
+        return filtered_positions
+
 
 # Class to handle communication with a 6-DOF Dynamixel robot
 class Dxl6d:
@@ -45,6 +72,7 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
+        self.kalman_filter = KalmanFilterWrapper(n_joints=len(self.ids))
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -64,8 +92,6 @@ class Dxl6d:
         for i in self.ids:
             self.groupSyncRead.addParam(i)
 
-        self.disable_torque()
-
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
         self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
@@ -78,8 +104,10 @@ class Dxl6d:
         if self.using_pedal:
             rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
             self.send_command = False
+            self.enable_torque()
         else:
             self.send_command = True
+            self.disable_torque()
 
         self.rate = rospy.Rate(100) 
         self.pose_msg = PoseStamped()
@@ -90,6 +118,11 @@ class Dxl6d:
 
     def send_command_robot(self, msg):
         self.send_command = msg.data
+        if self.send_command and self.is_torque_enabled:
+            self.disable_torque()
+            
+        elif not self.send_command and not self.is_torque_enabled:
+            self.enable_torque()
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -142,6 +175,7 @@ class Dxl6d:
         initialized = False
         while not rospy.is_shutdown():
             if self.teleoperation_mode:
+
                 dxl_comm_result = self.groupSyncRead.txRxPacket()
                 if dxl_comm_result != COMM_SUCCESS:
                     rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
@@ -162,6 +196,7 @@ class Dxl6d:
                     if i == 1 and id_ == 11:
                         data[i - 1] -= math.pi
 
+                data = self.kalman_filter.filter_positions(data)
                 
                 # Update joint state message with current joint positions
                 joint_state_msg.position = data 
@@ -195,12 +230,7 @@ class Dxl6d:
                 self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
                 
                 # Publish the pose and gripper data
-                if self.using_pedal and not self.send_command and not self.is_torque_enabled:
-                    self.enable_torque()
-
                 if self.send_command:
-                    if self.is_torque_enabled:
-                        self.disable_torque()
                     self.pub_pos.publish(self.pose_msg)
                     self.pub_gripper.publish(self.gripper_msg)
 
