@@ -15,7 +15,6 @@
         <param name="dev" value="/dev/input/js0"/>
         <param name="deadzone" value="0.05"/>
         <param name="autorepeat_rate" value="100"/>
-        <remap from="joy" to="/dxl_input/send_command"/>
     </node>
 
     <!-- Left arm -->

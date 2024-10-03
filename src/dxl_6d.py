@@ -102,7 +102,7 @@ class Dxl6d:
             rospy.Subscriber('/hucebot_streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
 
         if self.using_pedal:
-            rospy.Subscriber('/dxl_input/send_command', Joy, self.send_command_robot)
+            rospy.Subscriber('/joy', Joy, self.send_command_robot)
             self.send_command = False
             self.enable_torque()
         else:
@@ -121,11 +121,13 @@ class Dxl6d:
             self.send_command = False
         elif msg.axes[0] == -1:
             self.send_command = True
-            
+
         if self.send_command and self.is_torque_enabled:
+            self.is_torque_enabled = False
             self.disable_torque()
             
         elif not self.send_command and not self.is_torque_enabled:
+            self.is_torque_enabled = True
             self.enable_torque()
 
     # Enable torque for all motors
