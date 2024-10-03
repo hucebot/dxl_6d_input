@@ -22,6 +22,7 @@ RUN apt-get install -yy gedit
 RUN apt-get install -yy ros-noetic-rviz
 RUN apt-get install -yy ros-noetic-robot-state-publisher
 RUN apt-get install -yy ros-noetic-joy
+RUN pip3 install pykalman
 
 ###### Create a workspace
 RUN mkdir -p /root/catkin_ws/src

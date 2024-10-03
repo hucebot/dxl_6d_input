@@ -122,14 +122,6 @@ class Dxl6d:
         elif msg.axes[0] == -1:
             self.send_command = True
 
-        if self.send_command and self.is_torque_enabled:
-            self.is_torque_enabled = False
-            self.disable_torque()
-            
-        elif not self.send_command and not self.is_torque_enabled:
-            self.is_torque_enabled = True
-            self.enable_torque()
-
     # Enable torque for all motors
     def enable_torque(self):
         self.is_torque_enabled = True
