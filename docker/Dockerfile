@@ -41,8 +41,8 @@ RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin build"
 RUN echo "source /root/catkin_ws/devel/setup.bash" >> ~/.bashrc
 
 ###### Set ROS environment variables: Tiago wired
-RUN echo "export ROS_MASTER_URI=http://10.68.0.1:11311" >> ~/.bashrc
-RUN echo "export ROS_IP=10.68.0.128" >> ~/.bashrc
+RUN echo "#export ROS_MASTER_URI=http://10.68.0.1:11311" >> ~/.bashrc
+RUN echo "#export ROS_IP=10.68.0.128" >> ~/.bashrc
 
 
 

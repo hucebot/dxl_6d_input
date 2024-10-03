@@ -119,8 +119,10 @@ class Dxl6d:
     def send_command_robot(self, msg):
         if msg.axes[0] == 1:
             self.send_command = False
+            self.enable_torque()
         elif msg.axes[0] == -1:
             self.send_command = True
+            self.disable_torque()
 
     # Enable torque for all motors
     def enable_torque(self):
