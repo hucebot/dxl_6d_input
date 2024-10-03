@@ -45,6 +45,7 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
+        self.data = [None] * len(self.ids)
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -156,7 +157,6 @@ class Dxl6d:
 
     # Main loop to control the robot
     def loop(self):
-        data = [None] * len(self.ids)
         joint_state_msg = JointState()
         joint_state_msg.name = [f'arm_joint_{i}' for i in range(1, len(self.ids)+1)] 
         joint_state_msg.velocity = []
@@ -177,27 +177,27 @@ class Dxl6d:
                             rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
 
                         present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
-                        data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
+                        self.data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
 
                         # Apply inversion of direction for specific motors
                         if i == 5:
-                            data[i - 1] = -data[i - 1]
+                            self.data[i - 1] = -data[i - 1]
                         
                         if i == 1 and id_ == 11:
-                            data[i - 1] -= math.pi
+                            self.data[i - 1] -= math.pi
 
                 except Exception as e:
                     rospy.logerr(f"Error processing data from motors: {e}")
                 
                 # Update joint state message with current joint positions
-                joint_state_msg.position = data 
+                joint_state_msg.position = self.data 
                 joint_state_msg.header.stamp = rospy.Time.now()  # Add timestamp
 
                 # Publish the joint states
                 self.robot_state_publisher.publish(joint_state_msg)
 
                 # Forward kinematics and pose/gripper publishing (your existing code)
-                q = np.array(data[0:-1])  # Kinematic configuration excluding the gripper
+                q = np.array(self.data[0:-1])  # Kinematic configuration excluding the gripper
                 pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
                 frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
 
