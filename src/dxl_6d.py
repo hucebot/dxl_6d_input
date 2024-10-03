@@ -10,33 +10,6 @@ import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
 from sensor_msgs.msg import JointState, Joy
 from geometry_msgs.msg import PoseStamped
-from pykalman import KalmanFilter
-
-class KalmanFilterWrapper:
-    def __init__(self, n_joints, initial_state_mean=0, initial_covariance=1e-4):
-        self.n_joints = n_joints
-        self.kalman_filters = [KalmanFilter(
-            transition_matrices=[1],
-            observation_matrices=[1],
-            initial_state_mean=initial_state_mean,
-            initial_state_covariance=initial_covariance,
-            observation_covariance=0.1,
-            transition_covariance=0.1) for _ in range(n_joints)]
-        
-        self.state_means = [initial_state_mean for _ in range(n_joints)]
-        self.state_covariances = [initial_covariance for _ in range(n_joints)]
-
-    def filter_positions(self, positions):
-        filtered_positions = []
-        for i in range(self.n_joints):
-            self.state_means[i], self.state_covariances[i] = self.kalman_filters[i].filter_update(
-                self.state_means[i],
-                self.state_covariances[i],
-                observation=positions[i]
-            )
-            filtered_positions.append(self.state_means[i][0])
-        return filtered_positions
-
 
 # Class to handle communication with a 6-DOF Dynamixel robot
 class Dxl6d:
@@ -72,8 +45,7 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        self.kalman_filter = KalmanFilterWrapper(n_joints=len(self.ids))
-
+        
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
         self.data = self.model.createData()
@@ -130,28 +102,34 @@ class Dxl6d:
     # Enable torque for all motors
     def enable_torque(self):
         self.is_torque_enabled = True
-        for dxl_id in self.ids:
-            dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
-            if self.debuginfo:
-                if dxl_comm_result != COMM_SUCCESS:
-                    rospy.logerr(f"Failed to enable torque for ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
-                elif dxl_error != 0:
-                    rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
-                else:
-                    rospy.loginfo(f"Torque enabled for motor ID {dxl_id}")
+        try:
+            for dxl_id in self.ids:
+                dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 1)
+                if self.debuginfo:
+                    if dxl_comm_result != COMM_SUCCESS:
+                        rospy.logerr(f"Failed to enable torque for ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
+                    elif dxl_error != 0:
+                        rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
+                    else:
+                        rospy.loginfo(f"Torque enabled for motor ID {dxl_id}")
+        except Exception as e:
+            rospy.logerr(f"Error enabling torque: {e}")
 
     # Disable torque for all motors
     def disable_torque(self):
         self.is_torque_enabled = False
-        for dxl_id in self.ids:
-            dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 0)
-            if self.debuginfo:
-                if dxl_comm_result != COMM_SUCCESS:
-                    rospy.logerr(f"Failed to disable torque for ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
-                elif dxl_error != 0:
-                    rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
-                else:
-                    rospy.loginfo(f"Torque disabled for motor ID {dxl_id}")
+        try:
+            for dxl_id in self.ids:
+                dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(self.portHandler, dxl_id, self.torque_enable_addr, 0)
+                if self.debuginfo:
+                    if dxl_comm_result != COMM_SUCCESS:
+                        rospy.logerr(f"Failed to disable torque for ID {dxl_id}: {self.packetHandler.getTxRxResult(dxl_comm_result)}")
+                    elif dxl_error != 0:
+                        rospy.logerr(f"Dynamixel error for ID {dxl_id}: {self.packetHandler.getRxPacketError(dxl_error)}")
+                    else:
+                        rospy.loginfo(f"Torque disabled for motor ID {dxl_id}")
+        except Exception as e:
+            rospy.logerr(f"Error disabling torque: {e}")
 
     # Ping a motor (for future implementation)
     def ping(self, dxl_id):
@@ -178,28 +156,29 @@ class Dxl6d:
         initialized = False
         while not rospy.is_shutdown():
             if self.teleoperation_mode:
+                try:
+                    dxl_comm_result = self.groupSyncRead.txRxPacket()
+                    if dxl_comm_result != COMM_SUCCESS:
+                        rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
 
-                dxl_comm_result = self.groupSyncRead.txRxPacket()
-                if dxl_comm_result != COMM_SUCCESS:
-                    rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
+                    # Get present position of each motor
+                    for i, id_ in enumerate(self.ids, start=1):
+                        dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
+                        if not dxl_getdata_result:
+                            rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
 
-                # Get present position of each motor
-                for i, id_ in enumerate(self.ids, start=1):
-                    dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
-                    if not dxl_getdata_result:
-                        rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
+                        present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
+                        data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
 
-                    present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
-                    data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
+                        # Apply inversion of direction for specific motors
+                        if i == 5:
+                            data[i - 1] = -data[i - 1]
+                        
+                        if i == 1 and id_ == 11:
+                            data[i - 1] -= math.pi
 
-                    # Apply inversion of direction for specific motors
-                    if i == 5:
-                        data[i - 1] = -data[i - 1]
-                    
-                    if i == 1 and id_ == 11:
-                        data[i - 1] -= math.pi
-
-                data = self.kalman_filter.filter_positions(data)
+                except Exception as e:
+                    rospy.logerr(f"Error processing data from motors: {e}")
                 
                 # Update joint state message with current joint positions
                 joint_state_msg.position = data 
