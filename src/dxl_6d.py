@@ -45,7 +45,7 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        
+
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
         self.data = self.model.createData()
@@ -98,6 +98,15 @@ class Dxl6d:
             self.send_command = True
             if self.is_torque_enabled == True:
                 self.disable_torque()
+
+        if msg.axes[1] >= 0.8:
+            self.send_command = False
+            if self.is_torque_enabled == True:
+                self.disable_torque()
+            self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
+            self.initialized == False
+
+        
 
     # Enable torque for all motors
     def enable_torque(self):
