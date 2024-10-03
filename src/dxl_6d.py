@@ -99,7 +99,7 @@ class Dxl6d:
             if self.is_torque_enabled == True:
                 self.disable_torque()
 
-        if msg.axes[1] >= 0.8:
+        if msg.axes[1] <= -0.8 and msg.axes[0] >= 0.8:
             self.send_command = False
             if self.is_torque_enabled == True:
                 self.disable_torque()
