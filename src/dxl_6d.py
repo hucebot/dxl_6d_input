@@ -8,7 +8,7 @@ import pinocchio
 import numpy as np
 import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Joy
 from geometry_msgs.msg import PoseStamped
 from pykalman import KalmanFilter
 
@@ -102,7 +102,7 @@ class Dxl6d:
             rospy.Subscriber('/hucebot_streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
 
         if self.using_pedal:
-            rospy.Subscriber('/hucebot_pedal/send_command', Bool, self.send_command_robot)
+            rospy.Subscriber('/dxl_input/send_command', Joy, self.send_command_robot)
             self.send_command = False
             self.enable_torque()
         else:
@@ -117,7 +117,11 @@ class Dxl6d:
         self.teleoperation_mode = msg.data
 
     def send_command_robot(self, msg):
-        self.send_command = msg.data
+        if msg.axes[0] == 1:
+            self.send_command = False
+        elif msg.axes[0] == -1:
+            self.send_command = True
+            
         if self.send_command and self.is_torque_enabled:
             self.disable_torque()
             

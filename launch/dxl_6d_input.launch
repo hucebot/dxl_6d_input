@@ -10,6 +10,14 @@
     <arg name="using_pedal" default="true" />
     <arg name="using_streamdeck" default="false" />
 
+    <!-- Joystick -->
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen">
+        <param name="dev" value="/dev/input/js0"/>
+        <param name="deadzone" value="0.05"/>
+        <param name="autorepeat_rate" value="100"/>
+        <remap from="joy" to="/dxl_input/send_command"/>
+    </node>
+
     <!-- Left arm -->
     <arg name="devicename_left" default="/dev/ttyUSB0" /> <!-- Change this to the correct port -->
     <arg name="ids_left" default="1,2,3,4,5,6,7"/>
