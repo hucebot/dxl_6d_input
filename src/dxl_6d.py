@@ -45,11 +45,12 @@ class Dxl6d:
         self.initialized = False
         self.teleoperation_mode = True
         self.is_torque_enabled = False
-        self.data = [None] * len(self.ids)
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
         self.data = self.model.createData()
+        self.motor_data = [None] * len(self.ids)
+        self.frame_id = self.model.getFrameId("tip")
       
         ##### Dynamixel initialization
         self.portHandler = PortHandler(self.devicename)
@@ -90,24 +91,32 @@ class Dxl6d:
         self.teleoperation_mode = msg.data
 
     def send_command_robot(self, msg):
-        if msg.axes[0] >= 0.8 and msg.axes[1] >= 0.8 or msg.axes[0] >= 0.8 and msg.axes[1] >= 0.8:
+        # Resting position or initialize position - Torques are enabled
+        if msg.axes[0] == 0 and msg.axes[1] == 0 or \
+            msg.axes[0] == 1 and msg.axes[1] == 0 or \
+            msg.axes[0] == 1 and msg.axes[1] == 1:
             self.send_command = False
             if self.is_torque_enabled == False:
+                rospy.logwarn("Torque enabled - Resting position")
                 self.enable_torque()
 
-        elif msg.axes[0] <= -0.8:
+        # Teleoperation mode - Torques are disabled
+        elif msg.axes[0] <= -0.8 and msg.axes[1] == 0 or \
+            msg.axes[0] <= -0.8 and msg.axes[1] >= 0.8:
             self.send_command = True
             if self.is_torque_enabled == True:
+                rospy.logwarn("Torque disabled - Teleoperation mode")
                 self.disable_torque()
 
-        elif msg.axes[1] <= -0.8 and msg.axes[0] >= 0.8 or msg.axes[1] <= -0.8 and msg.axes[0] == 0:
+        # Reseting position - Torques are disabled
+        elif msg.axes[0] == 0 and msg.axes[1] <= -0.3 or \
+            msg.axes[0] == 1 and msg.axes[1] <= -0.3:
             self.send_command = False
             if self.is_torque_enabled == True:
+                rospy.logwarn("Torque disabled - Reseting position")
                 self.disable_torque()
             self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initialized = False
-
-        
+            self.initial_position = self.data.oMf[self.frame_id].translation.copy()
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -153,7 +162,7 @@ class Dxl6d:
     def debug(self, debuginfo):
         if debuginfo:
             rospy.loginfo(("{:<24} : {: .3f} {: .3f} {: .3f} {: .2f}"
-                    .format("tip", *self.data.oMf[frame_id].translation.T.flat , self.gripper_msg.data)))
+                    .format("tip", *self.data.oMf[self.frame_id].translation.T.flat , self.gripper_msg.data)))
 
     # Main loop to control the robot
     def loop(self):
@@ -162,62 +171,61 @@ class Dxl6d:
         joint_state_msg.velocity = []
         joint_state_msg.effort = []
         
-        initialized = False
         while not rospy.is_shutdown():
             if self.teleoperation_mode:
                 try:
                     dxl_comm_result = self.groupSyncRead.txRxPacket()
-                    if dxl_comm_result != COMM_SUCCESS:
+                    if dxl_comm_result != COMM_SUCCESS and self.debuginfo:
                         rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
 
                     # Get present position of each motor
                     for i, id_ in enumerate(self.ids, start=1):
                         dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
-                        if not dxl_getdata_result:
+                        if not dxl_getdata_result and self.debuginfo:
                             rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
 
                         present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
-                        self.data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
+                        self.motor_data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
 
                         # Apply inversion of direction for specific motors
                         if i == 5:
-                            self.data[i - 1] = -data[i - 1]
+                            self.motor_data[i - 1] = -self.motor_data[i - 1]
                         
                         if i == 1 and id_ == 11:
-                            self.data[i - 1] -= math.pi
+                            self.motor_data[i - 1] -= math.pi
 
                 except Exception as e:
                     rospy.logerr(f"Error processing data from motors: {e}")
                 
                 # Update joint state message with current joint positions
-                joint_state_msg.position = self.data 
+                joint_state_msg.position = self.motor_data 
                 joint_state_msg.header.stamp = rospy.Time.now()  # Add timestamp
 
                 # Publish the joint states
                 self.robot_state_publisher.publish(joint_state_msg)
 
                 # Forward kinematics and pose/gripper publishing (your existing code)
-                q = np.array(self.data[0:-1])  # Kinematic configuration excluding the gripper
+                q = np.array(self.motor_data[0:-1])  # Kinematic configuration excluding the gripper
                 pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
-                frame_id = self.model.getFrameId("tip")  # Get ID of the "tip" frame
+                  # Get ID of the "tip" frame
 
                 if self.initialized == False:
-                    self.initial_position = self.data.oMf[frame_id].translation.copy()
+                    self.initial_position = self.data.oMf[self.frame_id].translation.copy()
                     self.initialized = True
 
-                quat = pinocchio.Quaternion(self.data.oMf[frame_id].rotation)
+                quat = pinocchio.Quaternion(self.data.oMf[self.frame_id].rotation)
 
                 self.pose_msg.header.frame_id = "ci/world"
-                self.pose_msg.pose.position.x = (self.data.oMf[frame_id].translation[0] - self.initial_position[0]) * self.space_scalar   + self.robot_position.x
-                self.pose_msg.pose.position.y = (self.data.oMf[frame_id].translation[1] - self.initial_position[1]) * self.space_scalar  + self.robot_position.y
-                self.pose_msg.pose.position.z = (self.data.oMf[frame_id].translation[2] - self.initial_position[2]) * self.space_scalar  + self.robot_position.z
+                self.pose_msg.pose.position.x = (self.data.oMf[self.frame_id].translation[0] - self.initial_position[0]) * self.space_scalar   + self.robot_position.x
+                self.pose_msg.pose.position.y = (self.data.oMf[self.frame_id].translation[1] - self.initial_position[1]) * self.space_scalar  + self.robot_position.y
+                self.pose_msg.pose.position.z = (self.data.oMf[self.frame_id].translation[2] - self.initial_position[2]) * self.space_scalar  + self.robot_position.z
                 self.pose_msg.pose.orientation.x = quat.x
                 self.pose_msg.pose.orientation.y = quat.y
                 self.pose_msg.pose.orientation.z = quat.z
                 self.pose_msg.pose.orientation.w = quat.w
 
                 # Normalize the gripper data (open: -0.1135, closed: -0.3227)
-                g = (data[-1] + 0.1135) / (- 0.3227 + 0.1135)
+                g = (self.motor_data[-1] + 0.1135) / (- 0.3227 + 0.1135)
                 self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
                 
                 # Publish the pose and gripper data
