@@ -73,7 +73,7 @@ class Dxl6d:
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
         if self.using_streamdeck:
-            rospy.Subscriber('/hucebot_streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
+            rospy.Subscriber('/streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
 
         if self.using_pedal:
             rospy.Subscriber('/joy', Joy, self.send_command_robot)
