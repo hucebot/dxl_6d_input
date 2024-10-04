@@ -47,6 +47,10 @@ qtcreator-*
 # Emacs
 .#*
 
+# Vscode
+.vscode
+/log
+
 # Catkin custom files
 CATKIN_IGNORE
 hardware/simpleGimball/~$handle.SLDPRT
