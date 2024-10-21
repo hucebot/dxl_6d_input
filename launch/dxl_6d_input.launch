@@ -15,7 +15,7 @@
 
     <!-- Joystick -->
     <node name="joy_node" pkg="joy" type="joy_node" output="screen"
-        if="$(eval arg('using_pedal') == 'true')"
+        if="$(if $(arg using_pedal) == 'true' 'true' 'false')"
     >
         <param name="dev" value="/dev/input/js0"/>
         <param name="deadzone" value="0.05"/>
@@ -31,7 +31,7 @@
     <arg name="left_robot_position_topic" default="/cartesian/gripper_left_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
     <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen"
-        if="$(eval arg('using_left_arm') == 'true')"
+        if="$(if $(arg using_left_arm) == 'true' 'true' 'false')"
     >
         <param name="protocol_version" value="$(arg protocol_version)" />
         <param name="devicename" value="$(arg devicename_left)" />
@@ -60,7 +60,7 @@
     <arg name="right_robot_position_topic" default="/cartesian/gripper_right_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
     <node name="right_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen"
-        if="$(eval arg('using_right_arm') == 'true')"
+        if="$(if $(arg using_right_arm) == 'true' 'true' 'false')"
     >
         <param name="protocol_version" value="$(arg protocol_version)" />
         <param name="devicename" value="$(arg devicename_right)" />
