@@ -7,11 +7,16 @@
     <arg name="urdf_filename" default="$(find dxl_6d_input)/src/arm.urdf" />
     <arg name="debuginfo" default="false" />
     <arg name="space_scalar" default="2.0" />
-    <arg name="using_pedal" default="true" />
+    <arg name="using_pedal" default="false" />
     <arg name="using_streamdeck" default="false" />
+    <arg name="using_left_arm" default="true" />
+    <arg name="using_right_arm" default="true" />
+    <arg name="rate" default="100" />
 
     <!-- Joystick -->
-    <node name="joy_node" pkg="joy" type="joy_node" output="screen">
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen"
+        if="$(eval arg('using_pedal') == 'true')"
+    >
         <param name="dev" value="/dev/input/js0"/>
         <param name="deadzone" value="0.05"/>
         <param name="autorepeat_rate" value="20"/>
@@ -25,7 +30,9 @@
     <arg name="left_gripper_topic" default="/dxl_input/gripper_left" /> <!-- Change this to the correct topic -->
     <arg name="left_robot_position_topic" default="/cartesian/gripper_left_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
-    <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
+    <node name="left_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen"
+        if="$(eval arg('using_left_arm') == 'true')"
+    >
         <param name="protocol_version" value="$(arg protocol_version)" />
         <param name="devicename" value="$(arg devicename_left)" />
         <param name="baudrate" value="$(arg baudrate)" />
@@ -41,6 +48,7 @@
         <param name="space_scalar" value="$(arg space_scalar)" />
         <param name="using_pedal" value="$(arg using_pedal)" />
         <param name="using_streamdeck" value="$(arg using_streamdeck)" />
+        <param name="rate" value="$(arg rate)" />
     </node>
 
     <!-- Right arm -->
@@ -51,7 +59,9 @@
     <arg name="right_gripper_topic" default="/dxl_input/gripper_right" /> <!-- Change this to the correct topic -->
     <arg name="right_robot_position_topic" default="/cartesian/gripper_right_grasping_frame/current_reference" /> <!-- Change this to the correct topic -->
 
-    <node name="right_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen">
+    <node name="right_dxl_6d_input" pkg="dxl_6d_input" type="dxl_6d.py" output="screen"
+        if="$(eval arg('using_right_arm') == 'true')"
+    >
         <param name="protocol_version" value="$(arg protocol_version)" />
         <param name="devicename" value="$(arg devicename_right)" />
         <param name="baudrate" value="$(arg baudrate)" />
@@ -67,15 +77,6 @@
         <param name="space_scalar" value="$(arg space_scalar)" />
         <param name="using_pedal" value="$(arg using_pedal)" />
         <param name="using_streamdeck" value="$(arg using_streamdeck)" />
+        <param name="rate" value="$(arg rate)" />
     </node>
-
-     <!-- send the coman robot XML to param server -->
-     <param name="robot_description" textfile="$(find dxl_6d_input)/src/arm.urdf" />
-    <!-- start robot state publisher -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen" >
-        <!--remap from="joint_states" to="coman/joints_state"/-->
-        <param name="publish_frequency" type="double" value="50.0" />
-    </node> 
-
-
 </launch>

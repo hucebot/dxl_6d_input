@@ -33,8 +33,9 @@ class Dxl6d:
         self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')  # Topic for the gripper state
         self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')  # Topic for the robot position
         self.space_scalar = float(rospy.get_param('~space_scalar', 2.0)) # Scalar for the workspace
-        self.using_pedal = bool(rospy.get_param('~using_pedal', True))  # Enable/disable pedal control
+        self.using_pedal = bool(rospy.get_param('~using_pedal', False))  # Enable/disable pedal control
         self.using_streamdeck = bool(rospy.get_param('~using_streamdeck', False))  # Enable/disable streamdeck control
+        self.rate_ = int(rospy.get_param('~rate', 100))  # Rate for the main loop
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
@@ -69,7 +70,6 @@ class Dxl6d:
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
         self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
-        self.robot_state_publisher = rospy.Publisher('/joint_states', JointState, queue_size=10)
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
         if self.using_streamdeck:
@@ -83,7 +83,7 @@ class Dxl6d:
             self.send_command = True
             self.disable_torque()
 
-        self.rate = rospy.Rate(20) 
+        self.rate = rospy.Rate(self.rate_) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
 
@@ -196,13 +196,6 @@ class Dxl6d:
 
                 except Exception as e:
                     rospy.logerr(f"Error processing data from motors: {e}")
-                
-                # Update joint state message with current joint positions
-                joint_state_msg.position = self.motor_data 
-                joint_state_msg.header.stamp = rospy.Time.now()  # Add timestamp
-
-                # Publish the joint states
-                self.robot_state_publisher.publish(joint_state_msg)
 
                 # Forward kinematics and pose/gripper publishing (your existing code)
                 q = np.array(self.motor_data[0:-1])  # Kinematic configuration excluding the gripper

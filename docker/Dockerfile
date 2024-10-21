@@ -43,6 +43,7 @@ RUN echo "source /root/catkin_ws/devel/setup.bash" >> ~/.bashrc
 RUN echo "#export ROS_MASTER_URI=http://10.68.0.1:11311" >> ~/.bashrc
 RUN echo "#export ROS_IP=10.68.0.128" >> ~/.bashrc
 
+CMD /bin/bash -c "source /root/catkin_ws/devel/setup.bash && roslaunch dxl_6d_input dxl_6d_input.launch"
 
 
 
