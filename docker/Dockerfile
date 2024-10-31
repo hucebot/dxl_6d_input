@@ -22,31 +22,23 @@ RUN apt-get install -yy gedit
 RUN apt-get install -yy ros-noetic-rviz
 RUN apt-get install -yy ros-noetic-robot-state-publisher
 RUN apt-get install -yy ros-noetic-joy
-RUN apt-get install -yy ros-noetic-teleop-twist-joy
-
-###### Create a workspace
-RUN mkdir -p /root/catkin_ws/src
-WORKDIR /root/catkin_ws/src
-
-###### Clone the necessary repositories
-RUN git clone --branch devel-clean-code https://github.com/hucebot/dxl_6d_input.git
-WORKDIR /root/catkin_ws/src/dxl_6d_input
 
 ###### Source the ROS setup.bash
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
-###### Build the workspace
-WORKDIR /root/catkin_ws
+###### Create a workspace
+RUN mkdir -p /catkin_ws/src
+WORKDIR /catkin_ws/src
+RUN git clone --branch devel-clean-code https://github.com/hucebot/dxl_6d_input.git
+
+WORKDIR /catkin_ws
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin build"
-RUN echo "source /root/catkin_ws/devel/setup.bash" >> ~/.bashrc
 
 ###### Set ROS environment variables: Tiago wired
 RUN echo "#export ROS_MASTER_URI=http://10.68.0.1:11311" >> ~/.bashrc
 RUN echo "#export ROS_IP=10.68.0.128" >> ~/.bashrc
 
-CMD /bin/bash -c "source /root/catkin_ws/devel/setup.bash && roslaunch dxl_6d_input dxl_6d_input.launch"
-
-
+ENTRYPOINT [ "/bin/bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch dxl_6d_input dxl_6d_input.launch" ]
 
 
 
