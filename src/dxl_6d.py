@@ -11,37 +11,37 @@ from std_msgs.msg import Float64MultiArray, Float32, Bool
 from sensor_msgs.msg import JointState, Joy
 from geometry_msgs.msg import PoseStamped
 
-# Class to handle communication with a 6-DOF Dynamixel robot
 class Dxl6d:
     def __init__(self):
         rospy.init_node('dxl_input', anonymous=True)
         rospy.loginfo("dxl_input node started")
 
-        ###### ROS parameters (can be set through launch files or parameter server)
-        self.urdf_filename = rospy.get_param('~urdf_filename', 'src/dxl_6d_input/src/arm.urdf')  # Path to the URDF file
-        self.ids = rospy.get_param('~ids', [1,2,3,4,5,6,7])  # Dynamixel motor IDs
-        self.ids = self.ids.split(',')  # Split the string into a list
-        self.ids = [int(i) for i in self.ids]  # Convert to integers
-        self.devicename = rospy.get_param('~devicename', '/dev/ttyUSB0')  # Device name for serial communication
-        self.baudrate = int(rospy.get_param('~baudrate', 1000000))  # Baudrate for communication
-        self.protocol_version = float(rospy.get_param('~protocol_version', 2.0))  # Dynamixel protocol version
-        self.addr_present_position = int(rospy.get_param('~addr_present_position', 132))  # Address for present position
-        self.len_present_position = int(rospy.get_param('~len_present_position', 4))  # Length of the position data
-        self.debuginfo = bool(rospy.get_param('~debuginfo', False))  # Enable/disable debug info
-        self.arm_side = rospy.get_param('~arm_side', 'right')  # Side of the arm (right or left)
-        self.position_topic = rospy.get_param('~position_topic', '/dxl_input/pos_right')  # Topic for the current reference position
-        self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')  # Topic for the gripper state
-        self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')  # Topic for the robot position
-        self.space_scalar = float(rospy.get_param('~space_scalar', 2.0)) # Scalar for the workspace
-        self.using_pedal = bool(rospy.get_param('~using_pedal', False))  # Enable/disable pedal control
-        self.using_streamdeck = bool(rospy.get_param('~using_streamdeck', False))  # Enable/disable streamdeck control
-        self.rate_ = int(rospy.get_param('~rate', 100))  # Rate for the main loop
+        ###### ROS parameters
+        self.urdf_filename = rospy.get_param('~urdf_filename', 'src/dxl_6d_input/src/arm.urdf')
+        self.ids = rospy.get_param('~ids', [1,2,3,4,5,6,7])
+        self.ids = self.ids.split(',') 
+        self.ids = [int(i) for i in self.ids]
+        self.devicename = rospy.get_param('~devicename', '/dev/ttyUSB0')
+        self.baudrate = int(rospy.get_param('~baudrate', 1000000))
+        self.protocol_version = float(rospy.get_param('~protocol_version', 2.0)) 
+        self.addr_present_position = int(rospy.get_param('~addr_present_position', 132)) 
+        self.len_present_position = int(rospy.get_param('~len_present_position', 4))
+        self.debuginfo = bool(rospy.get_param('~debuginfo', False)) 
+        self.arm_side = rospy.get_param('~arm_side', 'right') 
+        self.position_topic = rospy.get_param('~position_topic', '/dxl_input/pos_right') 
+        self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')
+        self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')
+        self.space_scalar = float(rospy.get_param('~space_scalar', 2.0))
+        self.using_pedal = bool(rospy.get_param('~using_pedal', False))
+        self.using_streamdeck = bool(rospy.get_param('~using_streamdeck', False))
+        self.rate_ = int(rospy.get_param('~rate', 100))
 
         # Dynamixel torque and position addresses
         self.torque_enable_addr = 64
         self.addr_goal_position = 116
         self.initial_position = []
         self.robot_position = []
+        self.home_position = False
         self.first_message = True
         self.initialized = False
         self.teleoperation_mode = True
@@ -74,9 +74,10 @@ class Dxl6d:
 
         if self.using_streamdeck:
             rospy.Subscriber('/streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
+            rospy.Subscriber('/streamdeck/home_position', Bool, self.home_position_callback)
 
         if self.using_pedal:
-            rospy.Subscriber('/joy', Joy, self.send_command_robot)
+            rospy.Subscriber('/teleoperation/joy', Joy, self.send_command_robot)
             self.send_command = False
             self.enable_torque()
         else:
@@ -89,6 +90,9 @@ class Dxl6d:
 
     def teleoperation_mode_callback(self, msg):
         self.teleoperation_mode = msg.data
+
+    def home_position_callback(self, msg):
+        self.home_position = msg.data
 
     def send_command_robot(self, msg):
         # Resting position or initialize position - Torques are enabled
@@ -166,13 +170,15 @@ class Dxl6d:
 
     # Main loop to control the robot
     def loop(self):
-        joint_state_msg = JointState()
-        joint_state_msg.name = [f'arm_joint_{i}' for i in range(1, len(self.ids)+1)] 
-        joint_state_msg.velocity = []
-        joint_state_msg.effort = []
-        
         while not rospy.is_shutdown():
-            if self.teleoperation_mode:
+            if self.home_position:
+                pass
+                #TODO reset the arm position and the robot position
+                #self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
+                #self.initial_position = self.data.oMf[self.frame_id].translation.copy()
+                #self.home_position = False
+
+            if self.teleoperation_mode and not self.home_position:
                 try:
                     dxl_comm_result = self.groupSyncRead.txRxPacket()
                     if dxl_comm_result != COMM_SUCCESS and self.debuginfo:
