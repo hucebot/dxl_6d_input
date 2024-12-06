@@ -20,8 +20,6 @@ RUN apt-get install -yy terminator
 RUN apt-get install -yy git
 RUN apt-get install -yy gedit
 RUN apt-get install -yy ros-noetic-rviz
-RUN apt-get install -yy ros-noetic-robot-state-publisher
-RUN apt-get install -yy ros-noetic-joy
 
 ###### Source the ROS setup.bash
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc

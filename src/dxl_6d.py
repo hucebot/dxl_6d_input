@@ -32,8 +32,6 @@ class Dxl6d:
         self.gripper_topic = rospy.get_param('~gripper_topic', '/dxl_input/gripper_right')
         self.robot_position_topic = rospy.get_param('~robot_position_topic', '/cartesian/gripper_right_grasping_frame/current_reference')
         self.space_scalar = float(rospy.get_param('~space_scalar', 2.0))
-        self.using_pedal = bool(rospy.get_param('~using_pedal', False))
-        self.using_streamdeck = bool(rospy.get_param('~using_streamdeck', False))
         self.rate_ = int(rospy.get_param('~rate', 100))
 
         # Dynamixel torque and position addresses
@@ -41,11 +39,8 @@ class Dxl6d:
         self.addr_goal_position = 116
         self.initial_position = []
         self.robot_position = []
-        self.home_position = False
         self.first_message = True
         self.initialized = False
-        self.teleoperation_mode = True
-        self.is_torque_enabled = False
 
         ###### Pinocchio for kinematics
         self.model = pinocchio.buildModelFromUrdf(self.urdf_filename)
@@ -72,55 +67,9 @@ class Dxl6d:
         self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
-        if self.using_streamdeck:
-            rospy.Subscriber('/streamdeck/teleoperation_mode', Bool, self.teleoperation_mode_callback)
-            rospy.Subscriber('/streamdeck/home_position', Bool, self.home_position_callback)
-
-        if self.using_pedal:
-            rospy.Subscriber('/teleoperation/joy', Joy, self.send_command_robot)
-            self.send_command = False
-            self.enable_torque()
-        else:
-            self.send_command = True
-            self.disable_torque()
-
         self.rate = rospy.Rate(self.rate_) 
         self.pose_msg = PoseStamped()
         self.gripper_msg = Float32()
-
-    def teleoperation_mode_callback(self, msg):
-        self.teleoperation_mode = msg.data
-
-    def home_position_callback(self, msg):
-        self.home_position = msg.data
-
-    def send_command_robot(self, msg):
-        # Resting position or initialize position - Torques are enabled
-        if msg.axes[0] == 0 and msg.axes[1] == 0 or \
-            msg.axes[0] == 1 and msg.axes[1] == 0 or \
-            msg.axes[0] == 1 and msg.axes[1] == 1:
-            self.send_command = False
-            if self.is_torque_enabled == False:
-                rospy.logwarn("Torque enabled - Resting position")
-                self.enable_torque()
-
-        # Teleoperation mode - Torques are disabled
-        elif msg.axes[0] <= -0.8 and msg.axes[1] == 0 or \
-            msg.axes[0] <= -0.8 and msg.axes[1] >= 0.8:
-            self.send_command = True
-            if self.is_torque_enabled == True:
-                rospy.logwarn("Torque disabled - Teleoperation mode")
-                self.disable_torque()
-
-        # Reseting position - Torques are disabled
-        elif msg.axes[0] == 0 and msg.axes[1] <= -0.3 or \
-            msg.axes[0] == 1 and msg.axes[1] <= -0.3:
-            self.send_command = False
-            if self.is_torque_enabled == True:
-                rospy.logwarn("Torque disabled - Reseting position")
-                self.disable_torque()
-            self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-            self.initial_position = self.data.oMf[self.frame_id].translation.copy()
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -171,68 +120,59 @@ class Dxl6d:
     # Main loop to control the robot
     def loop(self):
         while not rospy.is_shutdown():
-            if self.home_position:
-                pass
-                #TODO reset the arm position and the robot position
-                #self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
-                #self.initial_position = self.data.oMf[self.frame_id].translation.copy()
-                #self.home_position = False
+            try:
+                dxl_comm_result = self.groupSyncRead.txRxPacket()
+                if dxl_comm_result != COMM_SUCCESS and self.debuginfo:
+                    rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
 
-            if self.teleoperation_mode and not self.home_position:
-                try:
-                    dxl_comm_result = self.groupSyncRead.txRxPacket()
-                    if dxl_comm_result != COMM_SUCCESS and self.debuginfo:
-                        rospy.logerr(f'groupSyncRead txRxPacket failed: {self.packetHandler.getTxRxResult(dxl_comm_result)}')
+                # Get present position of each motor
+                for i, id_ in enumerate(self.ids, start=1):
+                    dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
+                    if not dxl_getdata_result and self.debuginfo:
+                        rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
 
-                    # Get present position of each motor
-                    for i, id_ in enumerate(self.ids, start=1):
-                        dxl_getdata_result = self.groupSyncRead.isAvailable(id_, self.addr_present_position, self.len_present_position)
-                        if not dxl_getdata_result and self.debuginfo:
-                            rospy.logerr(f"[ID:{i:03d}] groupSyncRead getdata failed")
+                    present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
+                    self.motor_data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
 
-                        present_position = self.groupSyncRead.getData(id_, self.addr_present_position, self.len_present_position)
-                        self.motor_data[i - 1] = (present_position - 2048.) / 2048. * math.pi  # Convert encoder units to radians
+                    # Apply inversion of direction for specific motors
+                    if i == 5:
+                        self.motor_data[i - 1] = -self.motor_data[i - 1]
+                    
+                    if i == 1 and id_ == 11:
+                        self.motor_data[i - 1] -= math.pi
 
-                        # Apply inversion of direction for specific motors
-                        if i == 5:
-                            self.motor_data[i - 1] = -self.motor_data[i - 1]
-                        
-                        if i == 1 and id_ == 11:
-                            self.motor_data[i - 1] -= math.pi
+            except Exception as e:
+                rospy.logerr(f"Error processing data from motors: {e}")
 
-                except Exception as e:
-                    rospy.logerr(f"Error processing data from motors: {e}")
+            # Forward kinematics and pose/gripper publishing (your existing code)
+            q = np.array(self.motor_data[0:-1])  # Kinematic configuration excluding the gripper
+            pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
+                # Get ID of the "tip" frame
 
-                # Forward kinematics and pose/gripper publishing (your existing code)
-                q = np.array(self.motor_data[0:-1])  # Kinematic configuration excluding the gripper
-                pinocchio.framesForwardKinematics(self.model, self.data, q)  # Forward kinematics
-                  # Get ID of the "tip" frame
+            if self.initialized == False:
+                self.initial_position = self.data.oMf[self.frame_id].translation.copy()
+                self.initialized = True
 
-                if self.initialized == False:
-                    self.initial_position = self.data.oMf[self.frame_id].translation.copy()
-                    self.initialized = True
+            quat = pinocchio.Quaternion(self.data.oMf[self.frame_id].rotation)
 
-                quat = pinocchio.Quaternion(self.data.oMf[self.frame_id].rotation)
+            self.pose_msg.header.frame_id = "ci/world"
+            self.pose_msg.pose.position.x = (self.data.oMf[self.frame_id].translation[0] - self.initial_position[0]) * self.space_scalar   + self.robot_position.x
+            self.pose_msg.pose.position.y = (self.data.oMf[self.frame_id].translation[1] - self.initial_position[1]) * self.space_scalar  + self.robot_position.y
+            self.pose_msg.pose.position.z = (self.data.oMf[self.frame_id].translation[2] - self.initial_position[2]) * self.space_scalar  + self.robot_position.z
+            self.pose_msg.pose.orientation.x = quat.x
+            self.pose_msg.pose.orientation.y = quat.y
+            self.pose_msg.pose.orientation.z = quat.z
+            self.pose_msg.pose.orientation.w = quat.w
 
-                self.pose_msg.header.frame_id = "ci/world"
-                self.pose_msg.pose.position.x = (self.data.oMf[self.frame_id].translation[0] - self.initial_position[0]) * self.space_scalar   + self.robot_position.x
-                self.pose_msg.pose.position.y = (self.data.oMf[self.frame_id].translation[1] - self.initial_position[1]) * self.space_scalar  + self.robot_position.y
-                self.pose_msg.pose.position.z = (self.data.oMf[self.frame_id].translation[2] - self.initial_position[2]) * self.space_scalar  + self.robot_position.z
-                self.pose_msg.pose.orientation.x = quat.x
-                self.pose_msg.pose.orientation.y = quat.y
-                self.pose_msg.pose.orientation.z = quat.z
-                self.pose_msg.pose.orientation.w = quat.w
+            # Normalize the gripper data (open: -0.1135, closed: -0.3227)
+            g = (self.motor_data[-1] + 0.1135) / (- 0.3227 + 0.1135)
+            self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
+            
+            # Publish the pose and gripper data
+            self.pub_pos.publish(self.pose_msg)
+            self.pub_gripper.publish(self.gripper_msg)
 
-                # Normalize the gripper data (open: -0.1135, closed: -0.3227)
-                g = (self.motor_data[-1] + 0.1135) / (- 0.3227 + 0.1135)
-                self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
-                
-                # Publish the pose and gripper data
-                if self.send_command:
-                    self.pub_pos.publish(self.pose_msg)
-                    self.pub_gripper.publish(self.gripper_msg)
-
-                self.rate.sleep()
+            self.rate.sleep()
 
         self.portHandler.closePort()
 

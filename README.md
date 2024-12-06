@@ -33,8 +33,6 @@ The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 D
 - `~gripper_topic` - The topic where the position of the gripper is published.
 - `~robot_position_topic` - The topic where the position of the robot end effector is subscribed.
 - `~space_scalar` - The scalar to convert the position of the robot end effector to the device.
-- `~using_pedal` - Flag to enable the pedal usage.
-- `~using_streamdeck` - Flag to enable the StreamDeck usage.
 
 # Get Started
 
