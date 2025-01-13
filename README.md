@@ -2,12 +2,12 @@
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](
 https://opensource.org/licenses/BSD-3-Clause)
-[![Ros Version](https://img.shields.io/badge/ROS-Noetic-green)](
-http://wiki.ros.org/noetic)
+[![Ros Version](https://img.shields.io/badge/ROS2-Humble-green)](
+https://docs.ros.org/en/humble/index.html)
 
-ROS package for a 6-d input device based on dynamixels.
+ROS2 package for a 6-d input device based on dynamixels.
 
-The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 Dynamixels. The device is controlled by a ROS node that reads the position of the end effector and publishes it to a topic as also the position of the gripper. The node also subscribes to a topic to receive the actual position of the robot end effector to compensate the initial position of the device.
+The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 Dynamixels. The device is controlled by a ROS2 node that reads the position of the end effector and publishes it to a topic as also the position of the gripper. The node also subscribes to a topic to receive the actual position of the robot end effector to compensate the initial position of the device.
 
 ### Topics
 #### Publishers
@@ -45,7 +45,7 @@ For the hardware setup, the package is designed to work with the 2 Dynamixel MX-
 
 The easiest way to get started is to use the provided Docker image. You can find the Dockerfile in the `docker` folder. To build the image, run the following command:
 
-```docker build -t dxl_6d_input .```
+```sh build.sh```
 
 The run the command below to start the container (inside the `docker` folder):
 
@@ -77,4 +77,4 @@ Before starting the node, make sure that the Dynamixels are connected to the com
 
 Once the Dynamixels are connected, you can start the node running the following command:
 
-```roslaunch dxl_6d_input dxl_6d_input.launch```
+```ros2 launch ros2_dxl_6d_input dxl_6d_input.launch.py```

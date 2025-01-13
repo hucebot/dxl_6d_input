@@ -9,4 +9,6 @@ docker run \
         --privileged \
         -v /dev:/dev \
         --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-        dxl_6d:latest
+        -v `pwd`/../:/ros2_ws/src/ros2_dxl_6d_input \
+        -w /ros2_ws \
+        ros2_dxl_6d:latest

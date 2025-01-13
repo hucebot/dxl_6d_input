@@ -1,0 +1,27 @@
+general:
+  protocol_version: 2.0
+  baudrate: 1000000
+  addr_present_position: 132
+  len_present_position: 4
+  urdf_filename: "/ros2_ws/src/ros2_dxl_6d_input/src/arm.urdf"
+  debuginfo: false
+  space_scalar: 2.0
+  rate: 100
+
+left_arm:
+  enabled: true
+  devicename: "/dev/ttyUSB0"
+  ids: [1, 2, 3, 4, 5, 6, 7]
+  arm_side: "left"
+  position_topic: "/dxl_input/pos_left"
+  gripper_topic: "/dxl_input/gripper_left"
+  robot_position_topic: "/cartesian/gripper_left_grasping_frame/current_reference"
+
+right_arm:
+  enabled: true
+  devicename: "/dev/ttyUSB1"
+  ids: [11, 12, 13, 14, 15, 16, 17]
+  arm_side: "right"
+  position_topic: "/dxl_input/pos_right"
+  gripper_topic: "/dxl_input/gripper_right"
+  robot_position_topic: "/cartesian/gripper_right_grasping_frame/current_reference"
