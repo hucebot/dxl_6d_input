@@ -15,7 +15,7 @@ class Dxl6d(Node):
 
         ###### ROS parameters
         self.urdf_filename = self.declare_parameter('urdf_filename', '/ros2_ws/src/ros2_dxl_6d_input/src/arm.urdf').get_parameter_value().string_value
-        self.ids = self.declare_parameter('ids', '1,2,3,4,5,6,7').get_parameter_value().string_value.split(',')
+        self.ids = self.declare_parameter('ids', [1, 2, 3, 4, 5, 6, 7]).get_parameter_value().integer_array_value
         self.ids = [int(i) for i in self.ids]
         self.devicename = self.declare_parameter('devicename', '/dev/ttyUSB0').get_parameter_value().string_value
         self.baudrate = self.declare_parameter('baudrate', 1000000).get_parameter_value().integer_value
