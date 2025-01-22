@@ -9,7 +9,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Float64MultiArray, Float32, Bool
 from sensor_msgs.msg import JointState, Joy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 
 class Dxl6d:
     def __init__(self):
@@ -69,7 +69,7 @@ class Dxl6d:
 
         self.rate = rospy.Rate(self.rate_) 
         self.pose_msg = PoseStamped()
-        self.gripper_msg = Float32()
+        self.gripper_msg = PointStamped()
 
     # Enable torque for all motors
     def enable_torque(self):
@@ -115,7 +115,7 @@ class Dxl6d:
     def debug(self, debuginfo):
         if debuginfo:
             rospy.loginfo(("{:<24} : {: .3f} {: .3f} {: .3f} {: .2f}"
-                    .format("tip", *self.data.oMf[self.frame_id].translation.T.flat , self.gripper_msg.data)))
+                    .format("tip", *self.data.oMf[self.frame_id].translation.T.flat , self.gripper_msg.x)))
 
     # Main loop to control the robot
     def loop(self):
@@ -166,9 +166,10 @@ class Dxl6d:
 
             # Normalize the gripper data (open: -0.1135, closed: -0.3227)
             g = (self.motor_data[-1] + 0.1135) / (- 0.3227 + 0.1135)
-            self.gripper_msg.data = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
+            self.gripper_msg.point.x = 1 - np.clip(g, 0, 1)  # Clip between 0 and 1
             
-            # Publish the pose and gripper data
+            self.pose_msg.header.stamp = rospy.Time.now()
+            self.gripper_msg.header = self.pose_msg.header
             self.pub_pos.publish(self.pose_msg)
             self.pub_gripper.publish(self.gripper_msg)
 
