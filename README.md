@@ -36,8 +36,28 @@ The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 D
 
 # Get Started
 
+| 3D Design                               |
+|---------------------------------------------------|
+| <img src="https://github.com/hucebot/dxl_6d_input/blob/bimanual-teleoperation/images/3d_design.png" alt="3D Design"> |
+
+
 ## Hardware
-For the hardware setup, the package is designed to work with the 2 Dynamixel MX-64 and 5 Dynamixel MX-28 actuators. All the 3D parts can be found in the `dxl_6d_input/armd_design` folder where you will find the FreeCad files and the STL files for 3D printing.
+For the hardware setup, the package is designed to work with the 2 Dynamixel MX-64 and 5 Dynamixel MX-28 actuators. All the 3D parts can be found in the `dxl_6d_input/armd_design` folder where you will find the FreeCad files and the STL files for 3D printing. To assemble the device, you can follow the next steps:
+
+### Parts - By Side
+- 2 Dynamixel MX-64.
+- 5 Dynamixel MX-28.
+- Dynamixel cables.
+- 1 USB2Dynamixel.
+- 3D printed parts.
+- Screws and nuts (M2, M3, M4, M5).
+- 1 aluminum profile (10x10 mm) - 100 mm.
+
+### Assembly
+- Print the parts in the `dxl_6d_input/armd_design` folder. All the parts are designed to be printed with a **0.4mm nozzle and 0.2mm** layer height, with **40% infill** and **supports enabled**.
+    - The files `finger_1.stl`, `finger_2.stl`, `griper_axis.stl`, `griper_axis_1.stl`, `griper_axis_1.stl` should be mirrored to print the left arm.
+- The 2 Dynamixel MX-64 should be mounted on the base of the device, while the 5 Dynamixel MX-28 should be mounted on the arm.
+- We strongly recommend to assemble from the bottom to the top.
 
 ## Installation
 
@@ -74,6 +94,8 @@ Before starting the node, make sure that the Dynamixels are connected to the com
 | MX-28 - ID 7  | MX-28 - ID 17  |
 
 </center>
+
+## Start the Node
 
 Once the Dynamixels are connected, you can start the node running the following command:
 
