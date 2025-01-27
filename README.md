@@ -36,9 +36,9 @@ The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 D
 
 # Get Started
 
-| 3D Design                               |
-|---------------------------------------------------|
-| <img src="https://github.com/hucebot/dxl_6d_input/blob/bimanual-teleoperation/images/3d_design.png" alt="3D Design"> |
+| 3D Design                               | 3D Design                               |
+|---------------------------------------------------|---------------------------------------------------|
+| <img src="https://github.com/hucebot/dxl_6d_input/blob/bimanual-teleoperation/images/3d_design1.png" alt="3D Design"> | <img src="https://github.com/hucebot/dxl_6d_input/blob/bimanual-teleoperation/images/3d_design2.png" alt="3D Design"> |
 
 
 ## Hardware
