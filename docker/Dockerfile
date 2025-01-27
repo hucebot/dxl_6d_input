@@ -27,7 +27,7 @@ RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 ###### Create a workspace
 RUN mkdir -p /catkin_ws/src
 WORKDIR /catkin_ws/src
-RUN git clone --branch devel-clean-code https://github.com/hucebot/dxl_6d_input.git
+RUN git clone --branch bimanual-teleoperation https://github.com/hucebot/dxl_6d_input.git
 
 WORKDIR /catkin_ws
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin build"

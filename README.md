@@ -44,20 +44,25 @@ The end effector of the device is a 6-DOF manipulator with 2 MX-64 and 5 MX-28 D
 ## Hardware
 For the hardware setup, the package is designed to work with the 2 Dynamixel MX-64 and 5 Dynamixel MX-28 actuators. All the 3D parts can be found in the `dxl_6d_input/armd_design` folder where you will find the FreeCad files and the STL files for 3D printing. To assemble the device, you can follow the next steps:
 
-### Parts - By Side
+### Shopping List
 - 2 Dynamixel MX-64.
 - 5 Dynamixel MX-28.
 - Dynamixel cables.
 - 1 USB2Dynamixel.
-- 3D printed parts.
+- 3D printed parts - PLA.
 - Screws and nuts (M2, M3, M4, M5).
 - 1 aluminum profile (10x10 mm) - 100 mm.
 
 ### Assembly
-- Print the parts in the `dxl_6d_input/armd_design` folder. All the parts are designed to be printed with a **0.4mm nozzle and 0.2mm** layer height, with **40% infill** and **supports enabled**.
+- Print the parts in the `dxl_6d_input/armd_design` folder. All the parts are designed to be printed with a **0.4mm nozzle and 0.2mm** layer height, with **40% infill** and **supports enabled** using **PLA**.
     - The files `finger_1.stl`, `finger_2.stl`, `griper_axis.stl`, `griper_axis_1.stl`, `griper_axis_1.stl` should be mirrored to print the left arm.
+    - Once the parts are printed, you can start the assembly.
 - The 2 Dynamixel MX-64 should be mounted on the base of the device, while the 5 Dynamixel MX-28 should be mounted on the arm.
-- We strongly recommend to assemble from the bottom to the top.
+- Be aware of the orientation of the Dynamixels:
+    - First calibrate each motor to the zero position using the (Dynamixel Wizard)[https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/].
+    - Mount each motor following the joints directions. For a beter understanding of the joints, you can check the URDF file in the `dxl_6d_input/src` folder and view it with any URDF viewer.
+- The aluminum profile should be mounted as a guide for the gripper. You can see it on the images above.
+- We strongly **recommend to assemble from the bottom to the top.**
 
 ## Installation
 
@@ -65,7 +70,7 @@ For the hardware setup, the package is designed to work with the 2 Dynamixel MX-
 
 The easiest way to get started is to use the provided Docker image. You can find the Dockerfile in the `docker` folder. To build the image, run the following command:
 
-```docker build -t dxl_6d_input .```
+```sh build.sh```
 
 The run the command below to start the container (inside the `docker` folder):
 
@@ -76,8 +81,8 @@ The run the command below to start the container (inside the `docker` folder):
 ## Prepare the Dynamixels
 
 Before starting the node, make sure that the Dynamixels are connected to the computer and that the USB2Dynamixel is connected to the computer. Also check the following:
-- The protocol version is set to 2.0.
-- The baudrate is set to 1Mbps.
+- The protocol version is set to 2.0 for each Dynamixel.
+- The baudrate is set to 1Mbps for each Dynamixel.
 - The left arm it's connected to /dev/ttyUSB0 and the right arm to /dev/ttyUSB1.
 - The Dynamixels are connected in the following order:
 
