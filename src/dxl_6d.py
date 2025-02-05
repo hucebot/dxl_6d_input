@@ -64,7 +64,7 @@ class Dxl6d:
 
         ###### ROS publishers and subscribers
         self.pub_pos = rospy.Publisher(self.position_topic, PoseStamped, queue_size=10) 
-        self.pub_gripper = rospy.Publisher(self.gripper_topic, Float32, queue_size=10)
+        self.pub_gripper = rospy.Publisher(self.gripper_topic, PointStamped, queue_size=10)
         self.robot_position = rospy.wait_for_message(self.robot_position_topic, PoseStamped, timeout=5).pose.position
 
         self.rate = rospy.Rate(self.rate_) 

@@ -25,18 +25,14 @@ RUN apt-get install -yy ros-noetic-rviz
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
 ###### Create a workspace
-RUN mkdir -p /catkin_ws/src
-WORKDIR /catkin_ws/src
-RUN git clone --branch bimanual-teleoperation https://github.com/hucebot/dxl_6d_input.git
+RUN mkdir -p /ros_ws/src/
 
-WORKDIR /catkin_ws
+WORKDIR /ros_ws/
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin build"
 
 ###### Set ROS environment variables: Tiago wired
 RUN echo "#export ROS_MASTER_URI=http://10.68.0.1:11311" >> ~/.bashrc
 RUN echo "#export ROS_IP=10.68.0.128" >> ~/.bashrc
-
-ENTRYPOINT [ "/bin/bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch dxl_6d_input dxl_6d_input.launch" ]
 
 
 
