@@ -47,6 +47,8 @@ For the hardware setup, the package is designed to work with the 2 Dynamixel MX-
 ### Shopping List
 - 2 Dynamixel MX-64.
 - 5 Dynamixel MX-28.
+- 2 FR07 - H101K
+- 4 FR07 - S101K
 - Dynamixel cables.
 - 1 USB2Dynamixel.
 - 3D printed parts - PLA.
@@ -63,6 +65,7 @@ For the hardware setup, the package is designed to work with the 2 Dynamixel MX-
     - Mount each motor following the joints directions. For a beter understanding of the joints, you can check the URDF file in the `dxl_6d_input/src` folder and view it with any URDF viewer.
 - The aluminum profile should be mounted as a guide for the gripper. You can see it on the images above.
 - We strongly **recommend to assemble from the bottom to the top.**
+- For more information about the assembly, check [assembly instructions](https://github.com/hucebot/dxl_6d_input/blob/bimanual-teleoperation/assembly_guide.pdf)
 
 ## Installation
 
