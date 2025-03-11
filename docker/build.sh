@@ -1,0 +1,1 @@
+docker build -t dxl_6d_input .
